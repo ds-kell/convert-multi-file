@@ -104,28 +104,29 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ## Phase 4 – Menu chuột phải trên Windows ⭐⭐
 
 ### 4.1 Tham số dòng lệnh cho app
-- [ ] `tauri-plugin-cli`: `ConvertApp.exe --to <fmt> <files...>` → chế độ "quick convert" (không mở cửa sổ chính)
-- [ ] Cửa sổ nhỏ chế độ quick convert: tiến trình + danh sách lỗi + tự đóng khi xong (có tùy chọn)
+- [x] `ConvertApp.exe --to <fmt> <files...>` → chế độ "quick convert" (không mở cửa sổ chính). Dùng `clap` thay cho `tauri-plugin-cli` (cùng parser cho tiến trình được chuyển tiếp)
+- [x] Cửa sổ nhỏ quick convert: tiến trình + lỗi từng file + tự đóng khi xong (checkbox, nhớ lựa chọn)
 
 ### 4.2 Gom nhiều file
-- [ ] `tauri-plugin-single-instance`: tiến trình mở sau gửi tham số cho tiến trình đầu tiên
-- [ ] Gom các file nhận được trong ~300ms → xử lý một lượt
-- [ ] Test: chọn 20 file → chỉ 1 cửa sổ
+- [x] `tauri-plugin-single-instance`: tiến trình mở sau gửi tham số cho tiến trình đầu tiên
+- [x] Gom các file nhận được, đợi 300 ms yên lặng → một lượt, nhóm theo định dạng đích, bỏ trùng
+- [x] Test: giả lập 20 tiến trình cùng lúc → 1 cửa sổ, 20/20 file, tự đóng
 
 ### 4.3 Crate `shell` (dùng `winreg`)
-- [ ] `register(exe_path, registry)`: với mỗi đuôi file ghi `HKCU\Software\Classes\SystemFileAssociations\.<ext>\shell\ConvertApp`
-- [ ] Menu con: `MUIVerb="Convert to"`, `SubCommands` → mỗi định dạng đích một mục
-- [ ] Icon cho menu
-- [ ] `unregister()`: xóa sạch
-- [ ] Gọi `SHChangeNotify` để Explorer cập nhật ngay
+- [x] `register(registry)`: mỗi đuôi file ghi `HKCU\Software\Classes\SystemFileAssociations\.<ext>\shell\ConvertApp`
+- [x] Menu con: `MUIVerb="Convert to"` + `ExtendedSubCommandsKey` (thay cho `SubCommands`, vì `SubCommands` cần quyền admin) → mỗi định dạng đích một mục
+- [x] Icon cho menu
+- [x] `unregister()`: xóa sạch
+- [x] Gọi `SHChangeNotify` để Explorer cập nhật ngay
 
 ### 4.4 Tích hợp
-- [ ] CLI: `--register` / `--unregister` để test lúc dev
-- [ ] Trang Settings trong app: bật/tắt menu chuột phải
+- [x] `convertapp.exe --register` / `--unregister`
+- [x] Ô "Menu chuột phải" trên header app: bật/tắt
 
 ### ✅ Nghiệm thu
-- [ ] Chuột phải 5 file png → Show more options → Convert to ▸ JPG → 1 cửa sổ, ra đủ 5 file
-- [ ] Gỡ đăng ký → menu biến mất
+- [x] Đã đăng ký thật cho `target\release\convertapp.exe` (18 đuôi file), đã kiểm tra registry
+- [ ] Bạn tự thử: chuột phải 5 file png → Show more options → Convert to ▸ JPG → 1 cửa sổ, ra đủ 5 file
+- [ ] Bạn tự thử: bỏ tick "Menu chuột phải" → menu biến mất
 
 ---
 
