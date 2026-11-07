@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { insideTauri, pickFiles, pickFolder, revealInFolder } from "./api";
+import { insideTauri, pickFiles, pickFolder, pickWordTemplate, revealInFolder } from "./api";
 import { ContextMenuToggle } from "./components/ContextMenuToggle";
 import { DropZone } from "./components/DropZone";
 import { FileList } from "./components/FileList";
@@ -25,7 +25,9 @@ export default function App() {
     if (target !== null && !targets.some((t) => t.id === target)) setTarget(null);
   }, [targets, target]);
 
-  const convertible = files.filter((f) => f.error === null).length;
+  const ready = files.filter((f) => f.error === null);
+  const convertible = ready.length;
+  const imagesOnly = convertible > 0 && ready.every((f) => f.format?.category === "image");
   const canConvert = !busy && target !== null && convertible > 0;
 
   const handlePickFiles = async () => {
@@ -36,6 +38,11 @@ export default function App() {
   const handlePickFolder = async () => {
     const folder = await pickFolder();
     if (folder !== null) setSettings((s) => ({ ...s, outputDir: folder }));
+  };
+
+  const handlePickWordTemplate = async () => {
+    const template = await pickWordTemplate();
+    if (template !== null) setSettings((s) => ({ ...s, referenceDocx: template }));
   };
 
   const handleConvert = () => {
@@ -68,15 +75,23 @@ export default function App() {
 
           <section className="panel">
             <h2 className="panel__title">Chuyển sang</h2>
-            <TargetPicker targets={targets} selected={target} disabled={busy} onSelect={setTarget} />
+            <TargetPicker
+              targets={targets}
+              locked={converter.locked}
+              selected={target}
+              disabled={busy}
+              onSelect={setTarget}
+            />
             {targets.length > 0 && (
               <SettingsPanel
                 target={targets.find((t) => t.id === target) ?? null}
                 fileCount={convertible}
+                imagesOnly={imagesOnly}
                 settings={settings}
                 disabled={busy}
                 onChange={setSettings}
                 onPickFolder={handlePickFolder}
+                onPickWordTemplate={handlePickWordTemplate}
               />
             )}
           </section>

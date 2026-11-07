@@ -24,6 +24,14 @@ export interface Inspection {
   files: FileInfo[];
   /** Targets every recognised file can be converted to. */
   targets: FormatInfo[];
+  /** Targets that need a program that is not installed. */
+  locked: LockedTarget[];
+}
+
+/** A target shown greyed out, with how to unlock it. */
+export interface LockedTarget {
+  format: FormatInfo;
+  reason: string;
 }
 
 export type Theme = "auto" | "light" | "dark" | "none";
@@ -46,6 +54,8 @@ export interface Settings {
   /** With target PDF: one document for all images. */
   mergePdf: boolean;
   theme: Theme;
+  /** Word file whose styles are applied to generated .docx files. */
+  referenceDocx: string | null;
   /** `null` = save next to each input file. */
   outputDir: string | null;
 }
@@ -58,6 +68,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfPage: "a4",
   mergePdf: false,
   theme: "auto",
+  referenceDocx: null,
   outputDir: null,
 };
 

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { convertFiles, inspectFiles } from "../api";
-import type { ConvertEvent, FileItem, FileStatus, FormatInfo, Settings, Summary } from "../types";
+import type { ConvertEvent, FileItem, FileStatus, FormatInfo, LockedTarget, Settings, Summary } from "../types";
 
 const IDLE: FileStatus = { kind: "idle" };
 
@@ -10,6 +10,8 @@ export interface Converter {
   files: FileItem[];
   /** Targets all recognised files can be converted to. */
   targets: FormatInfo[];
+  /** Targets that need a missing program (shown greyed out). */
+  locked: LockedTarget[];
   /** `true` while `inspect_files` or `convert_files` is running. */
   busy: boolean;
   /** Totals of the last finished batch, cleared when the list changes. */
@@ -29,6 +31,7 @@ export interface Converter {
 export function useConverter(): Converter {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [targets, setTargets] = useState<FormatInfo[]>([]);
+  const [locked, setLocked] = useState<LockedTarget[]>([]);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +47,7 @@ export function useConverter(): Converter {
     if (paths.length === 0) {
       setFiles([]);
       setTargets([]);
+      setLocked([]);
       return;
     }
     setBusy(true);
@@ -51,6 +55,7 @@ export function useConverter(): Converter {
       const result = await inspectFiles(paths);
       setFiles(result.files.map((file) => ({ ...file, status: IDLE })));
       setTargets(result.targets);
+      setLocked(result.locked);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -78,6 +83,7 @@ export function useConverter(): Converter {
   const clear = useCallback(() => {
     setFiles([]);
     setTargets([]);
+    setLocked([]);
     setSummary(null);
     setError(null);
   }, []);
@@ -132,5 +138,5 @@ export function useConverter(): Converter {
     }
   }, []);
 
-  return { files, targets, busy, summary, error, addFiles, removeFile, clear, convert };
+  return { files, targets, locked, busy, summary, error, addFiles, removeFile, clear, convert };
 }

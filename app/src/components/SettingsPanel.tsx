@@ -5,10 +5,13 @@ interface SettingsPanelProps {
   target: FormatInfo | null;
   /** Number of files that will be converted (for the PDF merge option). */
   fileCount: number;
+  /** All files to convert are images (image options only apply then). */
+  imagesOnly: boolean;
   settings: Settings;
   disabled: boolean;
   onChange: (settings: Settings) => void;
   onPickFolder: () => void;
+  onPickWordTemplate: () => void;
 }
 
 const THEMES: { value: Theme; label: string }[] = [
@@ -24,13 +27,24 @@ const PDF_PAGES: { value: PdfPage; label: string }[] = [
 ];
 
 /** Options relevant to the chosen target, plus the output folder. */
-export function SettingsPanel({ target, fileCount, settings, disabled, onChange, onPickFolder }: SettingsPanelProps) {
+export function SettingsPanel({
+  target,
+  fileCount,
+  imagesOnly,
+  settings,
+  disabled,
+  onChange,
+  onPickFolder,
+  onPickWordTemplate,
+}: SettingsPanelProps) {
   const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
 
   const id = target?.id;
-  // PDF can only be produced from images for now, so image options apply too.
-  const imageTarget = target?.category === "image" || id === "pdf";
-  const showQuality = id === "jpg" || (id === "webp" && !settings.webpLossless) || id === "pdf";
+  // Image options apply to image outputs, and to PDFs made from images
+  // (Markdown → PDF is typeset by Typst and has none of them).
+  const imageTarget = imagesOnly && (target?.category === "image" || id === "pdf");
+  const imagePdf = imagesOnly && id === "pdf";
+  const showQuality = imagesOnly && (id === "jpg" || (id === "webp" && !settings.webpLossless) || id === "pdf");
 
   return (
     <div className="settings">
@@ -67,7 +81,7 @@ export function SettingsPanel({ target, fileCount, settings, disabled, onChange,
         <ResizeField value={settings.resize} disabled={disabled} onChange={(resize) => update({ resize })} />
       )}
 
-      {id === "pdf" && (
+      {imagePdf && (
         <>
           <label className="field">
             <span className="field__label">Khổ trang</span>
@@ -95,6 +109,30 @@ export function SettingsPanel({ target, fileCount, settings, disabled, onChange,
             </label>
           )}
         </>
+      )}
+
+      {id === "docx" && (
+        <div className="field field--full">
+          <span className="field__label">File Word mẫu (font, kiểu tiêu đề, lề trang)</span>
+          <div className="field__row">
+            <span className="path" title={settings.referenceDocx ?? undefined}>
+              {settings.referenceDocx ?? "Mặc định của Pandoc"}
+            </span>
+            <button type="button" className="button button--secondary" onClick={onPickWordTemplate} disabled={disabled}>
+              Chọn…
+            </button>
+            {settings.referenceDocx !== null && (
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => update({ referenceDocx: null })}
+                disabled={disabled}
+              >
+                Bỏ
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {id === "html" && (

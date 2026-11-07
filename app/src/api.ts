@@ -71,6 +71,17 @@ export async function pickFiles(): Promise<string[]> {
   return Array.isArray(selected) ? selected : [selected];
 }
 
+/** Lets the user pick a Word file to use as a style template. */
+export async function pickWordTemplate(): Promise<string | null> {
+  const selected = await open({
+    multiple: false,
+    directory: false,
+    title: "Chọn file Word mẫu (lấy font, kiểu tiêu đề, lề…)",
+    filters: [{ name: "Word", extensions: ["docx"] }],
+  });
+  return typeof selected === "string" ? selected : null;
+}
+
 /** Opens the native folder picker. Returns `null` if cancelled. */
 export async function pickFolder(): Promise<string | null> {
   const selected = await open({ directory: true, multiple: false, title: "Chọn thư mục lưu kết quả" });
