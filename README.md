@@ -68,6 +68,12 @@ cargo run -p convertapp-cli -- formats photo.png
 # Chuyển nhiều file, lưu vào thư mục out/
 cargo run -p convertapp-cli -- convert --to jpg --quality 85 --out out a.png b.tiff
 
+# Ảnh → WebP chất lượng 80, tối đa 1920px
+cargo run -p convertapp-cli -- convert --to webp --quality 80 --max-width 1920 --max-height 1920 *.jpg
+
+# Gộp nhiều ảnh thành 1 PDF
+cargo run -p convertapp-cli -- convert --to pdf --merge scan1.jpg scan2.jpg scan3.png
+
 # Markdown → HTML giao diện tối
 cargo run -p convertapp-cli -- convert --to html --theme dark README.md
 
@@ -81,11 +87,19 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 
 | Đầu vào | Đầu ra |
 |---|---|
-| png, jpg, bmp, gif, tiff, ico | qua lại giữa các định dạng này |
+| png, jpg, webp, bmp, gif, tiff, ico | qua lại giữa các định dạng này, và pdf |
+| svg | png, jpg, webp, bmp, gif, tiff, ico |
+| nhiều ảnh | 1 file pdf (mỗi ảnh một trang, `--merge`) |
 | md | html (trang hoàn chỉnh, có CSS sáng/tối, `--theme auto\|light\|dark\|none`) |
 | html, htm | md |
 
+Tùy chọn ảnh (CLI / app):
+- `--quality 1-100`: JPEG, WebP lossy và ảnh trong PDF. `--lossless`: WebP không mất dữ liệu.
+- `--max-width`, `--max-height`: thu nhỏ cho vừa (không phóng to ảnh raster; SVG thì render đúng kích thước yêu cầu). `--scale 50`: theo %.
+- `--page a4|image`: khổ trang PDF. A4 tự xoay ngang với ảnh rộng.
+
 Ghi chú:
+- Ảnh chụp điện thoại được xoay đúng chiều theo EXIF; metadata (EXIF, GPS…) không được copy sang file mới.
 - Markdown hỗ trợ cú pháp GitHub: bảng, checklist, gạch ngang, chú thích, alert `> [!NOTE]`. HTML viết sẵn trong file md được giữ nguyên.
 - HTML → md bỏ `<head>`, `<script>`, `<style>`; tự nhận encoding (UTF-8, `<meta charset>`, Windows-1252…).
 - Đường dẫn ảnh/link tương đối giữ nguyên, nên hãy lưu file kết quả cạnh file gốc (mặc định) để ảnh vẫn hiển thị.

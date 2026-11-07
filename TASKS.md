@@ -132,17 +132,19 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ## Phase 5 – Ảnh nâng cao ⭐⭐
 
-- [ ] **webp** encode lossy (crate `webp`), decode bằng `image`
-- [ ] **svg** → png/jpg bằng `resvg` (+ `usvg` nạp font hệ thống), chọn kích thước/scale
-- [ ] **ảnh → pdf** (`printpdf`): 1 ảnh/trang, khổ A4 hoặc theo kích thước ảnh
-- [ ] Gộp nhiều ảnh thành 1 pdf (option `merge` ở CLI + checkbox ở UI)
-- [ ] `ImageOptions`: chất lượng (JPG/WebP), resize (max width/height, %), xóa EXIF
-- [ ] Xoay ảnh đúng theo EXIF orientation trước khi convert
-- [ ] UI: panel tùy chọn hiện theo định dạng đích
-- [ ] Fixtures + test cho webp, svg, pdf
+- [x] **webp** encode lossy (crate `webp`/libwebp) + lossless, giữ trong suốt; decode bằng `image`
+- [x] **svg** → png/jpg/webp/bmp/gif/tiff/ico bằng `resvg`, font hệ thống nạp 1 lần; render thẳng ở kích thước yêu cầu (phóng to vẫn nét). Không có svg → pdf (sẽ bị raster hoá)
+- [x] **ảnh → pdf** bằng `pdf-writer` (thay cho `printpdf`, API ổn định hơn): 1 ảnh/trang, A4 (tự xoay ngang, không phóng to) hoặc theo kích thước ảnh
+- [x] Gộp nhiều ảnh thành 1 pdf: `--merge` ở CLI + checkbox "Gộp N ảnh" ở UI
+- [x] `ImageOptions`: `quality` (JPG/WebP/ảnh trong PDF), `webp_lossless`, `resize` (giữ nguyên / giới hạn px / %), `pdf_page`. Metadata (EXIF, GPS…) luôn bị loại bỏ
+- [x] Xoay ảnh đúng theo EXIF orientation trước khi convert
+- [x] UI: panel tùy chọn hiện theo định dạng đích
+- [x] Test cho webp, svg, pdf, EXIF, resize (12 test mới)
 
 ### ✅ Nghiệm thu
-- [ ] Convert ảnh chụp điện thoại (bị xoay theo EXIF) → webp q=80 → hiển thị đúng chiều, dung lượng giảm
+- [x] Test tự động: JPEG 40×20 có EXIF orientation=6 → webp q=80 → ra 20×40 (đúng chiều); webp lossy nhỏ hơn lossless, q30 < q90
+- [x] Chạy app thật (qua CDP): thả 2 PNG → PDF → tick gộp → ra 1 file `a.pdf`
+- [ ] Bạn tự thử với ảnh chụp điện thoại thật → webp q=80
 
 ---
 
