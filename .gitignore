@@ -1,0 +1,16 @@
+# Rust
+/target/
+**/target/
+
+# Frontend
+node_modules/
+dist/
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
