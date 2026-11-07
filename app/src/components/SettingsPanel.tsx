@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import type {
   FormatInfo,
   OfficeEngine,
@@ -27,24 +28,6 @@ interface SettingsPanelProps {
   onPickWordTemplate: () => void;
 }
 
-const THEMES: { value: Theme; label: string }[] = [
-  { value: "auto", label: "Tự động (theo hệ thống)" },
-  { value: "light", label: "Sáng" },
-  { value: "dark", label: "Tối" },
-  { value: "none", label: "Không CSS" },
-];
-
-const OFFICE_ENGINES: { value: OfficeEngine; label: string }[] = [
-  { value: "auto", label: "Tự động (Microsoft Office nếu có)" },
-  { value: "microsoft", label: "Microsoft Office" },
-  { value: "libreoffice", label: "LibreOffice" },
-];
-
-const PDF_PAGES: { value: PdfPage; label: string }[] = [
-  { value: "a4", label: "A4 (tự xoay ngang với ảnh rộng)" },
-  { value: "image", label: "Bằng kích thước ảnh" },
-];
-
 /** Options relevant to the chosen target, plus the output folder. */
 export function SettingsPanel({
   target,
@@ -58,7 +41,25 @@ export function SettingsPanel({
   onPickFolder,
   onPickWordTemplate,
 }: SettingsPanelProps) {
+  const { t, tn } = useI18n();
   const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+
+  const themes: { value: Theme; label: string }[] = [
+    { value: "auto", label: t("settings.theme.auto") },
+    { value: "light", label: t("settings.theme.light") },
+    { value: "dark", label: t("settings.theme.dark") },
+    { value: "none", label: t("settings.theme.none") },
+  ];
+  // Product names are not translated.
+  const officeEngines: { value: OfficeEngine; label: string }[] = [
+    { value: "auto", label: t("settings.office.auto") },
+    { value: "microsoft", label: "Microsoft Office" },
+    { value: "libreoffice", label: "LibreOffice" },
+  ];
+  const pdfPages: { value: PdfPage; label: string }[] = [
+    { value: "a4", label: t("settings.pdfPage.a4") },
+    { value: "image", label: t("settings.pdfPage.image") },
+  ];
 
   const id = target?.id;
   // Image options apply to image outputs, and to PDFs made from images.
@@ -73,8 +74,8 @@ export function SettingsPanel({
       {showQuality && (
         <label className="field">
           <span className="field__label">
-            Chất lượng: {settings.quality}
-            {id === "pdf" && " (ảnh không trong suốt)"}
+            {t("settings.quality", { value: settings.quality })}
+            {id === "pdf" && t("settings.qualityPdfNote")}
           </span>
           <input
             type="range"
@@ -95,7 +96,7 @@ export function SettingsPanel({
             disabled={disabled}
             onChange={(e) => update({ webpLossless: e.target.checked })}
           />
-          Không nén mất dữ liệu (lossless)
+          {t("settings.lossless")}
         </label>
       )}
 
@@ -106,13 +107,13 @@ export function SettingsPanel({
       {imagePdf && (
         <>
           <label className="field">
-            <span className="field__label">Khổ trang</span>
+            <span className="field__label">{t("settings.pdfPage")}</span>
             <select
               value={settings.pdfPage}
               disabled={disabled}
               onChange={(e) => update({ pdfPage: e.target.value as PdfPage })}
             >
-              {PDF_PAGES.map((page) => (
+              {pdfPages.map((page) => (
                 <option key={page.value} value={page.value}>
                   {page.label}
                 </option>
@@ -127,7 +128,7 @@ export function SettingsPanel({
                 disabled={disabled}
                 onChange={(e) => update({ mergePdf: e.target.checked })}
               />
-              Gộp {fileCount} ảnh thành 1 file PDF
+              {tn("settings.merge", fileCount)}
             </label>
           )}
         </>
@@ -144,13 +145,13 @@ export function SettingsPanel({
 
       {officeOnly && target !== null && (
         <label className="field">
-          <span className="field__label">Bộ Office dùng để chuyển</span>
+          <span className="field__label">{t("settings.officeEngine")}</span>
           <select
             value={settings.officeEngine}
             disabled={disabled}
             onChange={(e) => update({ officeEngine: e.target.value as OfficeEngine })}
           >
-            {OFFICE_ENGINES.map((engine) => (
+            {officeEngines.map((engine) => (
               <option key={engine.value} value={engine.value}>
                 {engine.label}
               </option>
@@ -161,13 +162,13 @@ export function SettingsPanel({
 
       {id === "docx" && (
         <div className="field field--full">
-          <span className="field__label">File Word mẫu (font, kiểu tiêu đề, lề trang)</span>
+          <span className="field__label">{t("settings.wordTemplate")}</span>
           <div className="field__row">
             <span className="path" title={settings.referenceDocx ?? undefined}>
-              {settings.referenceDocx ?? "Mặc định của Pandoc"}
+              {settings.referenceDocx ?? t("settings.wordTemplateDefault")}
             </span>
             <button type="button" className="button button--secondary" onClick={onPickWordTemplate} disabled={disabled}>
-              Chọn…
+              {t("settings.choose")}
             </button>
             {settings.referenceDocx !== null && (
               <button
@@ -176,7 +177,7 @@ export function SettingsPanel({
                 onClick={() => update({ referenceDocx: null })}
                 disabled={disabled}
               >
-                Bỏ
+                {t("settings.remove")}
               </button>
             )}
           </div>
@@ -185,13 +186,13 @@ export function SettingsPanel({
 
       {id === "html" && (
         <label className="field">
-          <span className="field__label">Giao diện HTML</span>
+          <span className="field__label">{t("settings.htmlTheme")}</span>
           <select
             value={settings.theme}
             disabled={disabled}
             onChange={(e) => update({ theme: e.target.value as Theme })}
           >
-            {THEMES.map((theme) => (
+            {themes.map((theme) => (
               <option key={theme.value} value={theme.value}>
                 {theme.label}
               </option>
@@ -201,13 +202,13 @@ export function SettingsPanel({
       )}
 
       <div className="field field--full">
-        <span className="field__label">Lưu vào</span>
+        <span className="field__label">{t("settings.saveTo")}</span>
         <div className="field__row">
           <span className="path" title={settings.outputDir ?? undefined}>
-            {settings.outputDir ?? "Cùng thư mục với file gốc"}
+            {settings.outputDir ?? t("settings.sameFolder")}
           </span>
           <button type="button" className="button button--secondary" onClick={onPickFolder} disabled={disabled}>
-            Đổi…
+            {t("settings.change")}
           </button>
           {settings.outputDir !== null && (
             <button
@@ -216,7 +217,7 @@ export function SettingsPanel({
               onClick={() => update({ outputDir: null })}
               disabled={disabled}
             >
-              Mặc định
+              {t("settings.default")}
             </button>
           )}
         </div>
@@ -224,14 +225,6 @@ export function SettingsPanel({
     </div>
   );
 }
-
-const PAPERS: { value: Paper; label: string }[] = [
-  { value: "a4", label: "A4" },
-  { value: "a3", label: "A3" },
-  { value: "a5", label: "A5" },
-  { value: "letter", label: "Letter (Mỹ)" },
-  { value: "legal", label: "Legal (Mỹ)" },
-];
 
 /** Clamps a number input to `[min, max]`, falling back to `fallback`. */
 function clampInt(value: string, min: number, max: number, fallback: number): number {
@@ -251,12 +244,20 @@ function WebFields({
   disabled: boolean;
   onChange: (value: WebSetting) => void;
 }) {
+  const { t } = useI18n();
   const set = (patch: Partial<WebSetting>) => onChange({ ...value, ...patch });
+  const papers: { value: Paper; label: string }[] = [
+    { value: "a4", label: "A4" },
+    { value: "a3", label: "A3" },
+    { value: "a5", label: "A5" },
+    { value: "letter", label: t("settings.paper.letter") },
+    { value: "legal", label: t("settings.paper.legal") },
+  ];
 
   if (target === "png") {
     return (
       <label className="field">
-        <span className="field__label">Chiều rộng cửa sổ chụp (px)</span>
+        <span className="field__label">{t("settings.screenshotWidth")}</span>
         <input
           className="number"
           type="number"
@@ -273,9 +274,9 @@ function WebFields({
   return (
     <>
       <label className="field">
-        <span className="field__label">Khổ giấy</span>
+        <span className="field__label">{t("settings.paper")}</span>
         <select value={value.paper} disabled={disabled} onChange={(e) => set({ paper: e.target.value as Paper })}>
-          {PAPERS.map((paper) => (
+          {papers.map((paper) => (
             <option key={paper.value} value={paper.value}>
               {paper.label}
             </option>
@@ -283,7 +284,7 @@ function WebFields({
         </select>
       </label>
       <label className="field">
-        <span className="field__label">Lề (mm)</span>
+        <span className="field__label">{t("settings.margin")}</span>
         <input
           className="number"
           type="number"
@@ -301,7 +302,7 @@ function WebFields({
           disabled={disabled}
           onChange={(e) => set({ landscape: e.target.checked })}
         />
-        Khổ ngang
+        {t("settings.landscape")}
       </label>
       <label className="checkbox field--inline">
         <input
@@ -310,7 +311,7 @@ function WebFields({
           disabled={disabled}
           onChange={(e) => set({ printBackground: e.target.checked })}
         />
-        In màu nền
+        {t("settings.background")}
       </label>
     </>
   );
@@ -332,6 +333,7 @@ function ResizeField({
   disabled: boolean;
   onChange: (value: ResizeSetting) => void;
 }) {
+  const { t } = useI18n();
   const setMode = (mode: ResizeSetting["mode"]) => {
     switch (mode) {
       case "original":
@@ -345,12 +347,12 @@ function ResizeField({
 
   return (
     <div className="field">
-      <span className="field__label">Kích thước</span>
+      <span className="field__label">{t("settings.size")}</span>
       <div className="field__row">
         <select value={value.mode} disabled={disabled} onChange={(e) => setMode(e.target.value as ResizeSetting["mode"])}>
-          <option value="original">Giữ nguyên</option>
-          <option value="fit">Giới hạn tối đa (px)</option>
-          <option value="percent">Theo phần trăm</option>
+          <option value="original">{t("settings.resize.original")}</option>
+          <option value="fit">{t("settings.resize.fit")}</option>
+          <option value="percent">{t("settings.resize.percent")}</option>
         </select>
 
         {value.mode === "fit" && (
@@ -359,8 +361,8 @@ function ResizeField({
               className="number"
               type="number"
               min={1}
-              placeholder="rộng"
-              aria-label="Chiều rộng tối đa"
+              placeholder={t("settings.resize.widthPlaceholder")}
+              aria-label={t("settings.resize.maxWidth")}
               value={value.maxWidth ?? ""}
               disabled={disabled}
               onChange={(e) => onChange({ ...value, maxWidth: positiveInt(e.target.value) })}
@@ -370,8 +372,8 @@ function ResizeField({
               className="number"
               type="number"
               min={1}
-              placeholder="cao"
-              aria-label="Chiều cao tối đa"
+              placeholder={t("settings.resize.heightPlaceholder")}
+              aria-label={t("settings.resize.maxHeight")}
               value={value.maxHeight ?? ""}
               disabled={disabled}
               onChange={(e) => onChange({ ...value, maxHeight: positiveInt(e.target.value) })}
@@ -386,7 +388,7 @@ function ResizeField({
               type="number"
               min={1}
               max={1000}
-              aria-label="Phần trăm"
+              aria-label={t("settings.resize.percentLabel")}
               value={value.percent}
               disabled={disabled}
               onChange={(e) => onChange({ mode: "percent", percent: positiveInt(e.target.value) ?? 100 })}

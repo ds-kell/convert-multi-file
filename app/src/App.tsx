@@ -4,10 +4,12 @@ import { insideTauri, pickFiles, pickFolder, pickWordTemplate, revealInFolder } 
 import { ContextMenuToggle } from "./components/ContextMenuToggle";
 import { DropZone } from "./components/DropZone";
 import { FileList } from "./components/FileList";
+import { LanguagePicker } from "./components/LanguagePicker";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TargetPicker } from "./components/TargetPicker";
 import { useConverter } from "./hooks/useConverter";
 import { useFileDrop } from "./hooks/useFileDrop";
+import { useI18n } from "./i18n";
 import { DEFAULT_SETTINGS, type Settings } from "./types";
 
 /** Formats opened by an office suite (Word/Excel/PowerPoint or LibreOffice). */
@@ -15,6 +17,7 @@ const OFFICE_FORMATS = new Set(["docx", "doc", "odt", "rtf", "xlsx", "xls", "ods
 
 /** Main (and only) screen: add files → pick a target → convert. */
 export default function App() {
+  const { t, tn } = useI18n();
   const converter = useConverter();
   const { files, targets, busy, summary, error } = converter;
 
@@ -36,17 +39,17 @@ export default function App() {
   const canConvert = !busy && target !== null && convertible > 0;
 
   const handlePickFiles = async () => {
-    const paths = await pickFiles();
+    const paths = await pickFiles(t("dialog.pickFiles"));
     if (paths.length > 0) await converter.addFiles(paths);
   };
 
   const handlePickFolder = async () => {
-    const folder = await pickFolder();
+    const folder = await pickFolder(t("dialog.pickFolder"));
     if (folder !== null) setSettings((s) => ({ ...s, outputDir: folder }));
   };
 
   const handlePickWordTemplate = async () => {
-    const template = await pickWordTemplate();
+    const template = await pickWordTemplate(t("dialog.pickTemplate"));
     if (template !== null) setSettings((s) => ({ ...s, referenceDocx: template }));
   };
 
@@ -61,15 +64,16 @@ export default function App() {
         <div className="app__header-actions">
           {files.length > 0 && (
             <button type="button" className="link-button" onClick={converter.clear} disabled={busy}>
-              Xoá danh sách
+              {t("app.clearList")}
             </button>
           )}
           <ContextMenuToggle />
+          <LanguagePicker />
         </div>
       </header>
 
       {!insideTauri && (
-        <p className="banner">Đang chạy trong trình duyệt: hãy mở bằng <code>cargo tauri dev</code> để chuyển đổi file.</p>
+        <p className="banner">{t("app.browserOnly", { command: "cargo tauri dev" })}</p>
       )}
 
       <DropZone hovering={hovering} compact={files.length > 0} disabled={busy} onPick={handlePickFiles} />
@@ -79,7 +83,7 @@ export default function App() {
           <FileList files={files} busy={busy} onRemove={(p) => void converter.removeFile(p)} onReveal={(p) => void revealInFolder(p)} />
 
           <section className="panel">
-            <h2 className="panel__title">Chuyển sang</h2>
+            <h2 className="panel__title">{t("app.convertTo")}</h2>
             <TargetPicker
               targets={targets}
               locked={converter.locked}
@@ -111,13 +115,13 @@ export default function App() {
         <footer className="app__footer">
           <span className="summary" aria-live="polite">
             {summary !== null
-              ? `Xong: ${summary.converted} thành công` +
-                (summary.skipped > 0 ? `, ${summary.skipped} bỏ qua` : "") +
-                (summary.failed > 0 ? `, ${summary.failed} lỗi` : "")
-              : `${convertible}/${files.length} file có thể chuyển`}
+              ? t("summary.done", { count: summary.converted }) +
+                (summary.skipped > 0 ? t("summary.skipped", { count: summary.skipped }) : "") +
+                (summary.failed > 0 ? t("summary.failed", { count: summary.failed }) : "")
+              : tn("summary.convertible", files.length, { ready: convertible })}
           </span>
           <button type="button" className="button button--primary" onClick={handleConvert} disabled={!canConvert}>
-            {busy ? "Đang chuyển…" : "Chuyển đổi"}
+            {busy ? t("app.converting") : t("app.convert")}
           </button>
         </footer>
       )}

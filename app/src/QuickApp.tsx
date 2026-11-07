@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { closeWindow, revealInFolder } from "./api";
+import { closeWindow, revealInFolder, setWindowTitle } from "./api";
 import { Status } from "./components/FileList";
 import { useQuickConvert } from "./hooks/useQuickConvert";
+import { useI18n } from "./i18n";
 
 /** localStorage key remembering the "close when done" checkbox. */
 const AUTO_CLOSE_KEY = "quick.autoClose";
@@ -30,7 +31,13 @@ function saveAutoClose(value: boolean) {
  * the files being converted and closes itself when everything succeeded.
  */
 export default function QuickApp() {
+  const { t, tn } = useI18n();
   const { rows, running, error, done, failed, skipped } = useQuickConvert();
+
+  // The backend creates the window with a neutral title; localise it here.
+  useEffect(() => {
+    void setWindowTitle(t("quick.windowTitle"));
+  }, [t]);
   const [autoClose, setAutoClose] = useState(loadAutoClose);
 
   const finished = !running && rows.length > 0;
@@ -54,11 +61,12 @@ export default function QuickApp() {
   };
 
   const target = rows[rows.length - 1]?.target;
-  const title = running
-    ? `Đang chuyển ${rows.length} file${target ? ` sang ${target.id.toUpperCase()}` : ""}…`
-    : rows.length === 0
-      ? "Đang nhận file…"
-      : "Hoàn tất";
+  const title =
+    rows.length === 0
+      ? t("quick.receiving")
+      : running && target
+        ? tn("quick.converting", rows.length, { target: target.id.toUpperCase() })
+        : t("quick.finished");
 
   return (
     <main className="quick">
@@ -66,9 +74,9 @@ export default function QuickApp() {
         <h1>{title}</h1>
         {finished && (
           <p className="summary">
-            {done} thành công
-            {skipped > 0 && `, ${skipped} bỏ qua`}
-            {failed > 0 && `, ${failed} lỗi`}
+            {t("quick.succeeded", { count: done })}
+            {skipped > 0 && t("summary.skipped", { count: skipped })}
+            {failed > 0 && t("summary.failed", { count: failed })}
           </p>
         )}
       </header>
@@ -90,16 +98,16 @@ export default function QuickApp() {
       <footer className="quick__footer">
         <label className="checkbox">
           <input type="checkbox" checked={autoClose} onChange={(e) => toggleAutoClose(e.target.checked)} />
-          Tự đóng khi xong
+          {t("quick.autoClose")}
         </label>
         <div className="quick__actions">
           {firstOutput?.kind === "done" && (
             <button type="button" className="button button--secondary" onClick={() => void revealInFolder(firstOutput.output)}>
-              Mở thư mục
+              {t("quick.openFolder")}
             </button>
           )}
           <button type="button" className="button button--primary" onClick={() => void closeWindow()} disabled={running}>
-            Đóng
+            {t("quick.close")}
           </button>
         </div>
       </footer>

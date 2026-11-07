@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { contextMenuEnabled, insideTauri, setContextMenu } from "../api";
+import { useI18n } from "../i18n";
 
 /**
  * Checkbox that adds/removes "Convert to" in the Explorer context menu.
  * Reads the real registry state on mount, so it reflects changes made by the
- * installer or `--register` too.
+ * installer or `--register` too. When the UI language changes while the
+ * menu is on, it is re-registered so its title follows the language.
  */
 export function ContextMenuToggle() {
+  const { language, t } = useI18n();
   const [enabled, setEnabled] = useState<boolean | null>(null); // null = loading
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +22,11 @@ export function ContextMenuToggle() {
       .catch((e) => setError(String(e)));
   }, []);
 
-  const toggle = async (value: boolean) => {
+  const apply = async (value: boolean) => {
     setSaving(true);
     setError(null);
     try {
-      setEnabled(await setContextMenu(value));
+      setEnabled(await setContextMenu(value, language));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -31,16 +34,25 @@ export function ContextMenuToggle() {
     }
   };
 
+  // Re-title an enabled menu after a language switch (not on first load).
+  const previousLanguage = useRef(language);
+  useEffect(() => {
+    if (previousLanguage.current === language) return;
+    previousLanguage.current = language;
+    if (enabled) void apply(true);
+    // Runs on language changes only: `apply` and `enabled` are read as they are at that moment.
+  }, [language]);
+
   return (
-    <label className="checkbox" title={error ?? "Thêm mục “Convert to” khi chuột phải vào file trong Explorer"}>
+    <label className="checkbox" title={error ?? t("menu.tooltip")}>
       <input
         type="checkbox"
         checked={enabled ?? false}
         disabled={enabled === null || saving}
-        onChange={(e) => void toggle(e.target.checked)}
+        onChange={(e) => void apply(e.target.checked)}
       />
-      Menu chuột phải
-      {error !== null && <span className="status status--error"> (lỗi)</span>}
+      {t("menu.toggle")}
+      {error !== null && <span className="status status--error">{t("menu.error")}</span>}
     </label>
   );
 }

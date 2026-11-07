@@ -38,8 +38,8 @@ const VERB: &str = "ConvertApp";
 /// Prefix of the keys holding each format's sub-menu.
 const MENU_PREFIX: &str = "ConvertApp.Menu.";
 
-/// Text of the cascading menu entry.
-const MENU_TITLE: &str = "Convert to";
+/// Default text of the cascading menu entry.
+const DEFAULT_MENU_TITLE: &str = "Convert to";
 
 /// Errors from reading or writing the shell integration.
 #[derive(Debug, thiserror::Error)]
@@ -75,6 +75,7 @@ pub struct KeySpec {
 pub struct ContextMenu {
     exe: PathBuf,
     classes_root: String,
+    title: String,
 }
 
 impl ContextMenu {
@@ -86,7 +87,16 @@ impl ContextMenu {
         Self {
             exe: exe.into(),
             classes_root: Self::DEFAULT_ROOT.to_owned(),
+            title: DEFAULT_MENU_TITLE.to_owned(),
         }
+    }
+
+    /// Text of the cascading entry, in the user's language (default
+    /// "Convert to"). Sub-items are format names and need no translation.
+    #[must_use]
+    pub fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
     }
 
     /// Uses another root key instead of `Software\Classes`.
@@ -125,7 +135,7 @@ impl ContextMenu {
                 keys.push(KeySpec {
                     path: self.path(&format!(r"SystemFileAssociations\.{ext}\shell\{VERB}")),
                     values: vec![
-                        value("MUIVerb", MENU_TITLE),
+                        value("MUIVerb", &self.title),
                         value("Icon", &format!("\"{exe}\",0")),
                         value("ExtendedSubCommandsKey", &menu_key),
                         // Keep the entry visible when more than 15 files are selected.
@@ -311,6 +321,18 @@ mod tests {
                 .iter()
                 .any(|k| k.path.contains(r"ConvertApp.Menu.png\shell\") && k.path.ends_with("_png"))
         );
+    }
+
+    #[test]
+    fn title_can_be_localised() {
+        let plan = ContextMenu::new("app.exe")
+            .with_title("Chuyển sang")
+            .plan(&Registry::with_defaults());
+        let entry = find(
+            &plan,
+            r"Software\Classes\SystemFileAssociations\.png\shell\ConvertApp",
+        );
+        assert_eq!(get(entry, "MUIVerb"), "Chuyển sang");
     }
 
     #[test]

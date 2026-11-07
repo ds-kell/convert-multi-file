@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import type { FormatInfo, LockedTarget } from "../types";
 
 interface TargetPickerProps {
@@ -11,20 +12,19 @@ interface TargetPickerProps {
 
 /** Segmented buttons for choosing the output format. */
 export function TargetPicker({ targets, locked, selected, disabled, onSelect }: TargetPickerProps) {
+  const { t } = useI18n();
+
   if (targets.length === 0 && locked.length === 0) {
-    return (
-      <p className="hint">
-        Không có định dạng chung cho các file đã chọn. Hãy chọn các file cùng loại (ví dụ toàn ảnh).
-      </p>
-    );
+    return <p className="hint">{t("targets.none")}</p>;
   }
 
-  // One line per distinct reason, e.g. "Pandoc is not installed…".
+  // One line per distinct reason, e.g. "Pandoc is not installed…". Reasons
+  // come from the engine in English, with the exact install command.
   const reasons = [...new Set(locked.map((l) => l.reason))];
 
   return (
     <>
-      <div className="targets" role="radiogroup" aria-label="Định dạng đầu ra">
+      <div className="targets" role="radiogroup" aria-label={t("targets.label")}>
         {targets.map((target) => (
           <button
             key={target.id}
@@ -47,7 +47,7 @@ export function TargetPicker({ targets, locked, selected, disabled, onSelect }: 
       </div>
       {reasons.map((reason) => (
         <p key={reason} className="hint">
-          {reason}
+          {t("targets.locked", { reason })}
         </p>
       ))}
     </>

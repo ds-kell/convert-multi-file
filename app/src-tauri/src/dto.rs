@@ -51,7 +51,27 @@ pub struct FileInfo {
     /// Detected format, `None` if unknown or unreadable.
     pub format: Option<FormatInfo>,
     /// Why the file cannot be converted, if it cannot.
-    pub error: Option<String>,
+    pub error: Option<FileIssue>,
+}
+
+/// Why a file cannot be converted. Sent as a code (not a sentence) so the
+/// UI can show it in the user's language.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum FileIssue {
+    /// Neither content nor extension is a known format.
+    UnknownFormat,
+    /// Known format, but nothing can convert it.
+    Unsupported,
+    /// Convertible after installing a program; `reason` says which (English,
+    /// includes the install command).
+    NeedsTool { reason: String },
+    /// The file could not be read; `detail` is the OS error.
+    Unreadable { detail: String },
 }
 
 /// Result of [`crate::commands::inspect_files`].
@@ -325,8 +345,9 @@ pub enum ConvertEvent {
     Progress { index: usize, fraction: f32 },
     /// File converted; `output` is the written file.
     Done { index: usize, output: PathBuf },
-    /// File left untouched, e.g. it is already in the target format.
-    Skipped { index: usize, reason: String },
+    /// File left untouched because it already is in the target `format`
+    /// (display name, e.g. "JPEG").
+    Skipped { index: usize, format: String },
     /// Conversion failed.
     Failed { index: usize, message: String },
     /// All files processed.

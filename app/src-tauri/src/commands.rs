@@ -9,7 +9,7 @@ use convertapp_core::{
 use tauri::State;
 use tauri::ipc::Channel;
 
-use crate::dto::{ConvertEvent, FileInfo, FormatInfo, Inspection, LockedInfo, Settings};
+use crate::dto::{ConvertEvent, FileInfo, FileIssue, FormatInfo, Inspection, LockedInfo, Settings};
 
 /// Shared application state, registered with `Builder::manage`.
 #[derive(Debug)]
@@ -74,8 +74,10 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
                         // Say *why*: a missing tool is fixable, unsupported is not.
                         Some(
                             match registry.locked_targets(&[format]).into_iter().next() {
-                                Some(locked) => locked.reason,
-                                None => "Chưa hỗ trợ chuyển đổi định dạng này".to_owned(),
+                                Some(locked) => FileIssue::NeedsTool {
+                                    reason: locked.reason,
+                                },
+                                None => FileIssue::Unsupported,
                             },
                         )
                     } else {
@@ -84,8 +86,13 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
                     };
                     (Some(format.into()), error)
                 }
-                Ok(None) => (None, Some("Không nhận diện được định dạng".to_owned())),
-                Err(err) => (None, Some(error_chain(&err))),
+                Ok(None) => (None, Some(FileIssue::UnknownFormat)),
+                Err(err) => (
+                    None,
+                    Some(FileIssue::Unreadable {
+                        detail: error_chain(&err),
+                    }),
+                ),
             };
             FileInfo {
                 path,
@@ -150,8 +157,10 @@ fn run_batch(
             && format == target
         {
             skipped += 1;
-            let reason = format!("Đã là {target}");
-            let _ = events.send(ConvertEvent::Skipped { index, reason });
+            let _ = events.send(ConvertEvent::Skipped {
+                index,
+                format: target.display_name().to_owned(),
+            });
             continue;
         }
 

@@ -37,7 +37,8 @@ pub fn show_main(app: &AppHandle) -> tauri::Result<WebviewWindow> {
 pub fn show_quick(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     show_or_create(app, QUICK_LABEL, |builder| {
         builder
-            .title("ConvertApp – Chuyển đổi nhanh")
+            // Localised by the frontend once it knows the UI language.
+            .title("ConvertApp")
             .inner_size(480.0, 380.0)
             .min_inner_size(380.0, 260.0)
             // Files come from the context menu, not from drag & drop.

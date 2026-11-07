@@ -91,7 +91,7 @@ export function useQuickConvert() {
           setStatus(event.data.index, { kind: "done", output: event.data.output });
           break;
         case "skipped":
-          setStatus(event.data.index, { kind: "skipped", reason: event.data.reason });
+          setStatus(event.data.index, { kind: "skipped", format: event.data.format });
           break;
         case "failed":
           setStatus(event.data.index, { kind: "failed", message: event.data.message });

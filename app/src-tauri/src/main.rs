@@ -35,8 +35,14 @@ fn main() -> ExitCode {
     let cwd = std::env::current_dir().unwrap_or_default();
 
     match parse_or_default(std::env::args_os(), &cwd) {
-        Launch::RegisterMenu => exit_with(menu::set_enabled(&registry, true), "registered"),
-        Launch::UnregisterMenu => exit_with(menu::set_enabled(&registry, false), "unregistered"),
+        Launch::RegisterMenu => exit_with(
+            menu::set_enabled(&registry, true, menu::Language::from_system()),
+            "registered",
+        ),
+        Launch::UnregisterMenu => exit_with(
+            menu::set_enabled(&registry, false, menu::Language::from_system()),
+            "unregistered",
+        ),
         launch => {
             run_app(registry, launch);
             ExitCode::SUCCESS

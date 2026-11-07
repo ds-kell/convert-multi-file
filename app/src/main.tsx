@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { windowLabel } from "./api";
 import App from "./App";
+import { I18nProvider } from "./i18n";
 import QuickApp from "./QuickApp";
 import "./styles.css";
 
@@ -15,6 +16,8 @@ const View = windowLabel === "quick" ? QuickApp : App;
 
 createRoot(root).render(
   <StrictMode>
-    <View />
+    <I18nProvider>
+      <View />
+    </I18nProvider>
   </StrictMode>,
 );

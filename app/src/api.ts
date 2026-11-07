@@ -7,6 +7,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
+import type { Language } from "./i18n";
 import type { ConvertEvent, Inspection, QuickBatch, Settings } from "./types";
 
 /** `false` when the UI runs in a plain browser (e.g. `npm run dev` alone). */
@@ -39,9 +40,17 @@ export function contextMenuEnabled(): Promise<boolean> {
   return invoke<boolean>("context_menu_enabled");
 }
 
-/** Adds or removes the Explorer context-menu entry; resolves to the new state. */
-export function setContextMenu(enabled: boolean): Promise<boolean> {
-  return invoke<boolean>("set_context_menu", { enabled });
+/**
+ * Adds or removes the Explorer context-menu entry, titled in `language`
+ * ("Convert to" / "Chuyển sang"); resolves to the new state.
+ */
+export function setContextMenu(enabled: boolean, language: Language): Promise<boolean> {
+  return invoke<boolean>("set_context_menu", { enabled, language });
+}
+
+/** Sets the title of the current window. */
+export function setWindowTitle(title: string): Promise<void> {
+  return getCurrentWindow().setTitle(title);
 }
 
 /** Detects formats and the common conversion targets for `paths`. */
@@ -64,27 +73,29 @@ export function convertFiles(
   return invoke<void>("convert_files", { paths, target, settings, onEvent: channel });
 }
 
+// Dialog titles are passed in by the caller, already translated.
+
 /** Opens the native file picker. Returns the chosen paths (empty if cancelled). */
-export async function pickFiles(): Promise<string[]> {
-  const selected = await open({ multiple: true, directory: false, title: "Chọn file cần chuyển đổi" });
+export async function pickFiles(title: string): Promise<string[]> {
+  const selected = await open({ multiple: true, directory: false, title });
   if (selected === null) return [];
   return Array.isArray(selected) ? selected : [selected];
 }
 
 /** Lets the user pick a Word file to use as a style template. */
-export async function pickWordTemplate(): Promise<string | null> {
+export async function pickWordTemplate(title: string): Promise<string | null> {
   const selected = await open({
     multiple: false,
     directory: false,
-    title: "Chọn file Word mẫu (lấy font, kiểu tiêu đề, lề…)",
+    title,
     filters: [{ name: "Word", extensions: ["docx"] }],
   });
   return typeof selected === "string" ? selected : null;
 }
 
 /** Opens the native folder picker. Returns `null` if cancelled. */
-export async function pickFolder(): Promise<string | null> {
-  const selected = await open({ directory: true, multiple: false, title: "Chọn thư mục lưu kết quả" });
+export async function pickFolder(title: string): Promise<string | null> {
+  const selected = await open({ directory: true, multiple: false, title });
   return typeof selected === "string" ? selected : null;
 }
 

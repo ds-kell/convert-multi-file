@@ -16,8 +16,15 @@ export interface FileInfo {
   name: string;
   format: FormatInfo | null;
   /** Why this file cannot be converted, if it cannot. */
-  error: string | null;
+  error: FileIssue | null;
 }
+
+/** Why a file cannot be converted (mirrors `FileIssue` in Rust); translated by the UI. */
+export type FileIssue =
+  | { kind: "unknownFormat" }
+  | { kind: "unsupported" }
+  | { kind: "needsTool"; reason: string }
+  | { kind: "unreadable"; detail: string };
 
 /** Result of the `inspect_files` command. */
 export interface Inspection {
@@ -97,7 +104,7 @@ export type ConvertEvent =
   | { event: "started"; data: { index: number } }
   | { event: "progress"; data: { index: number; fraction: number } }
   | { event: "done"; data: { index: number; output: string } }
-  | { event: "skipped"; data: { index: number; reason: string } }
+  | { event: "skipped"; data: { index: number; format: string } }
   | { event: "failed"; data: { index: number; message: string } }
   | { event: "finished"; data: { converted: number; skipped: number; failed: number } };
 
@@ -107,7 +114,7 @@ export type FileStatus =
   | { kind: "queued" }
   | { kind: "converting"; fraction: number }
   | { kind: "done"; output: string }
-  | { kind: "skipped"; reason: string }
+  | { kind: "skipped"; format: string }
   | { kind: "failed"; message: string };
 
 /** A row in the file list. */
