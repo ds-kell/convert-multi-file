@@ -176,16 +176,19 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ## Phase 7 – HTML → PDF/PNG qua trình duyệt ⭐⭐⭐
 
-- [ ] Dò Edge/Chrome: registry `App Paths`, các thư mục cài mặc định; cho phép tự đặt đường dẫn
-- [ ] `chromiumoxide`: chạy trình duyệt ẩn, dùng chung 1 trình duyệt cho cả lượt convert
-- [ ] html → pdf: khổ giấy, lề, in nền, ngang/dọc
-- [ ] html → png: chụp toàn trang, chọn chiều rộng viewport
-- [ ] md → pdf bằng cách 2: md → html (Phase 2) → Chromium
-- [ ] Chờ tải xong ảnh/font trước khi in (sự kiện `load` + timeout)
-- [ ] Không có trình duyệt → converter báo `Unavailable`
+- [x] Dò Edge/Chrome: registry `App Paths`, thư mục cài mặc định (+ macOS/Linux); tự đặt đường dẫn bằng `CONVERTAPP_BROWSER`
+- [x] Điều khiển trình duyệt ẩn qua CDP bằng **client đồng bộ tự viết** (dùng `tungstenite`) thay cho `chromiumoxide`: không cần tokio, code nhỏ, hợp với engine đồng bộ
+- [x] Mỗi file một trình duyệt riêng (profile tạm, ~1,3 s/file) thay vì dùng chung cả lượt: không lẫn cookie/trạng thái giữa các file, không bao giờ để sót tiến trình chạy ngầm. Có test kiểm tra không còn tiến trình sót
+- [x] html → pdf: khổ giấy (A4/A3/A5/Letter/Legal), lề, in nền, ngang/dọc; tiêu đề thành bookmark PDF
+- [x] html → png: chụp toàn trang (tối đa 16384 px cao), chọn chiều rộng cửa sổ
+- [x] md → pdf/png: md → html (Phase 2) → trình duyệt. Ưu tiên trước Pandoc + Typst (chỉ cần Edge là đủ)
+- [x] Chờ sự kiện `load` + font web sẵn sàng, có timeout
+- [x] Không có trình duyệt → `Unavailable` kèm hướng dẫn (hiện 🔒 trong app)
 
 ### ✅ Nghiệm thu
-- [ ] Trang HTML có CSS + ảnh → PDF giống như in thủ công từ Edge
+- [x] Test với Edge thật: A4 dọc 595×842 pt, Letter ngang 792×612 pt; PNG 800 px rộng, cao ≥ 3000 px, ảnh tương đối tải được
+- [x] App thật: html → pdf thành công; menu chuột phải (bản release) html → png ra đúng trang
+- [ ] Bạn tự so sánh PDF với khi in thủ công từ Edge (Ctrl+P → Lưu thành PDF)
 
 ---
 
