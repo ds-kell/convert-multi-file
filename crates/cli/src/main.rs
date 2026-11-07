@@ -9,7 +9,6 @@
 //! `2` invalid command-line arguments.
 
 mod args;
-mod report;
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -17,10 +16,10 @@ use std::process::ExitCode;
 use clap::Parser;
 use convertapp_core::{
     ConvertOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress, Registry, convert,
+    error_chain,
 };
 
 use crate::args::{Cli, Command, ConvertArgs};
-use crate::report::describe_error;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -84,7 +83,7 @@ fn list_formats(registry: &Registry, files: &[impl AsRef<Path>]) -> bool {
                 all_ok = false;
             }
             Err(err) => {
-                eprintln!("error: {}: {}", file.display(), describe_error(&err));
+                eprintln!("error: {}: {}", file.display(), error_chain(&err));
                 all_ok = false;
             }
         }
@@ -115,7 +114,7 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
         match convert(registry, &job, &NoProgress) {
             Ok(output) => println!("[ok]    {} -> {}", file.display(), output.display()),
             Err(err) => {
-                eprintln!("[error] {}: {}", file.display(), describe_error(&err));
+                eprintln!("[error] {}: {}", file.display(), error_chain(&err));
                 failed += 1;
             }
         }

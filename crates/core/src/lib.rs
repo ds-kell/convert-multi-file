@@ -40,7 +40,7 @@ mod registry;
 pub mod text;
 
 pub use converter::{Availability, Converter, Request};
-pub use error::{BoxError, ConvertError, Result};
+pub use error::{BoxError, ConvertError, Result, error_chain};
 pub use format::{Category, Format, ParseFormatError};
 pub use job::Job;
 pub use options::{ConvertOptions, HtmlOptions, HtmlTheme, ImageOptions};

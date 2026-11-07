@@ -73,6 +73,25 @@ pub enum ConvertError {
     },
 }
 
+/// Formats an error together with its chain of causes on one line, for
+/// showing to users: `"cannot read 'a.png': Format error decoding Png: …"`.
+///
+/// Causes whose text is already part of the message are skipped, because
+/// some libraries repeat their source in their own `Display` output.
+pub fn error_chain(err: &dyn StdError) -> String {
+    let mut message = err.to_string();
+    let mut source = err.source();
+    while let Some(cause) = source {
+        let cause_text = cause.to_string();
+        if !message.contains(&cause_text) {
+            message.push_str(": ");
+            message.push_str(&cause_text);
+        }
+        source = cause.source();
+    }
+    message
+}
+
 impl ConvertError {
     /// Shorthand for [`ConvertError::Io`].
     pub(crate) fn io(path: impl Into<PathBuf>, source: io::Error) -> Self {
@@ -96,5 +115,21 @@ impl ConvertError {
             path: path.into(),
             source: source.into(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_chain_joins_causes() {
+        let err = ConvertError::io("a.png", io::Error::other("disk on fire"));
+        assert_eq!(error_chain(&err), "I/O error on 'a.png': disk on fire");
+    }
+
+    #[test]
+    fn error_chain_leaves_plain_errors_unchanged() {
+        assert_eq!(error_chain(&io::Error::other("boom")), "boom");
     }
 }

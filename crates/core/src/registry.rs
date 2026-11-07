@@ -53,12 +53,16 @@ impl Registry {
     }
 
     /// Formats that *every* format in `inputs` can be converted to – used when
-    /// the user selects several files at once. A target equal to one of the
-    /// inputs is still offered as long as the other inputs support it
-    /// (e.g. PNG + JPEG → PNG converts only the JPEG).
+    /// the user selects several files at once.
+    ///
+    /// A target equal to one of the inputs is still offered as long as the
+    /// other inputs support it (e.g. PNG + JPEG → PNG converts only the JPEG
+    /// and skips the PNG). It is not offered when *all* inputs already have
+    /// that format, since there would be nothing to do.
     pub fn common_targets(&self, inputs: &[Format]) -> Vec<Format> {
-        let mut inputs = inputs.iter().copied().collect::<BTreeSet<_>>().into_iter();
-        let Some(first) = inputs.next() else {
+        let distinct: BTreeSet<Format> = inputs.iter().copied().collect();
+        let mut remaining = distinct.iter().copied();
+        let Some(first) = remaining.next() else {
             return Vec::new();
         };
 
@@ -70,9 +74,12 @@ impl Registry {
         };
 
         let mut common = with_self(first);
-        for format in inputs {
+        for format in remaining {
             let other = with_self(format);
             common.retain(|target| other.contains(target));
+        }
+        if distinct.len() == 1 {
+            common.remove(&first);
         }
         common.into_iter().collect()
     }
@@ -195,5 +202,17 @@ mod tests {
         assert!(common.contains(&Format::Jpeg));
         assert!(common.contains(&Format::Bmp));
         assert!(registry.common_targets(&[]).is_empty());
+
+        // Same format only: converting to itself would do nothing.
+        let same = registry.common_targets(&[Format::Png, Format::Png]);
+        assert!(!same.contains(&Format::Png));
+        assert!(same.contains(&Format::Jpeg));
+
+        // Unrelated families have nothing in common.
+        assert!(
+            registry
+                .common_targets(&[Format::Png, Format::Markdown])
+                .is_empty()
+        );
     }
 }
