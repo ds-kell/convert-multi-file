@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { insideTauri, pickFiles, pickFolder, revealInFolder } from "./api";
+import { ContextMenuToggle } from "./components/ContextMenuToggle";
 import { DropZone } from "./components/DropZone";
 import { FileList } from "./components/FileList";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -47,11 +48,14 @@ export default function App() {
     <main className="app">
       <header className="app__header">
         <h1>ConvertApp</h1>
-        {files.length > 0 && (
-          <button type="button" className="link-button" onClick={converter.clear} disabled={busy}>
-            Xoá danh sách
-          </button>
-        )}
+        <div className="app__header-actions">
+          {files.length > 0 && (
+            <button type="button" className="link-button" onClick={converter.clear} disabled={busy}>
+              Xoá danh sách
+            </button>
+          )}
+          <ContextMenuToggle />
+        </div>
       </header>
 
       {!insideTauri && (

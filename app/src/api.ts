@@ -2,13 +2,47 @@
 // call `invoke` directly, so the IPC surface lives in one place.
 
 import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
-import type { ConvertEvent, Inspection, Settings } from "./types";
+import type { ConvertEvent, Inspection, QuickBatch, Settings } from "./types";
 
 /** `false` when the UI runs in a plain browser (e.g. `npm run dev` alone). */
 export const insideTauri = isTauri();
+
+/** Label of the window this UI runs in: "main", "quick", or "browser" outside Tauri. */
+export const windowLabel: string = insideTauri ? getCurrentWindow().label : "browser";
+
+/** Closes the current window. */
+export function closeWindow(): Promise<void> {
+  return getCurrentWindow().close();
+}
+
+// ---------- Quick convert (Explorer context menu) ----------
+
+/** Waits until context-menu requests stop arriving, then returns them as batches. */
+export function takeQuickRequests(): Promise<QuickBatch[]> {
+  return invoke<QuickBatch[]>("take_quick_requests");
+}
+
+/** Calls `handler` whenever new context-menu requests are queued. */
+export function onQuickPending(handler: () => void): Promise<UnlistenFn> {
+  return listen("quick://pending", handler);
+}
+
+// ---------- Explorer context menu integration ----------
+
+/** Whether the "Convert to" entry is in the Explorer context menu. */
+export function contextMenuEnabled(): Promise<boolean> {
+  return invoke<boolean>("context_menu_enabled");
+}
+
+/** Adds or removes the Explorer context-menu entry; resolves to the new state. */
+export function setContextMenu(enabled: boolean): Promise<boolean> {
+  return invoke<boolean>("set_context_menu", { enabled });
+}
 
 /** Detects formats and the common conversion targets for `paths`. */
 export function inspectFiles(paths: string[]): Promise<Inspection> {

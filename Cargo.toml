@@ -11,6 +11,7 @@ publish = false
 # Internal crates, referenced from members with `convertapp-core.workspace = true`.
 [workspace.dependencies]
 convertapp-core = { path = "crates/core" }
+convertapp-shell = { path = "crates/shell" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

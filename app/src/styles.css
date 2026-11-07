@@ -242,6 +242,30 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 }
 .banner--error { border-color: var(--danger); color: var(--danger); }
 
+/* ---------- Checkbox ---------- */
+
+.checkbox { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+.checkbox input { accent-color: var(--accent); }
+
+.app__header-actions { display: flex; align-items: center; gap: 16px; }
+
+/* ---------- Quick-convert window ---------- */
+
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100vh;
+  padding: 16px;
+}
+.quick__header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.quick__header .summary { margin: 4px 0 0; }
+.quick__list { flex: 1; overflow: auto; }
+.file-row--quick { grid-template-columns: 48px minmax(0, 1fr) minmax(0, 150px); }
+.quick__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.quick__actions { display: flex; gap: 8px; }
+.quick .button--primary { min-width: 90px; }
+
 /* ---------- Narrow windows ---------- */
 
 @media (max-width: 640px) {

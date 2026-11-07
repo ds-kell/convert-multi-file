@@ -38,7 +38,7 @@ export function FileList({ files, busy, onRemove, onReveal }: FileListProps) {
 }
 
 /** Status cell: progress bar, result link or error message. */
-function Status({ status, onReveal }: { status: FileStatus; onReveal: (path: string) => void }) {
+export function Status({ status, onReveal }: { status: FileStatus; onReveal: (path: string) => void }) {
   switch (status.kind) {
     case "idle":
       return null;

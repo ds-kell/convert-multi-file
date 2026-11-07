@@ -9,6 +9,7 @@ Viết bằng Rust + Tauri v2. Kế hoạch tổng thể xem [PLAN.md](PLAN.md),
 |---|---|
 | `crates/core` | Engine chuyển đổi: `Format`, trait `Converter`, `Registry`, pipeline, các converter |
 | `crates/cli` | `convertapp-cli`: dùng engine từ dòng lệnh, tiện để test nhanh |
+| `crates/shell` | Đăng ký/gỡ menu chuột phải "Convert to" trong Explorer (registry HKCU) |
 | `app/src-tauri` | Backend app desktop (Tauri v2): command `inspect_files`, `convert_files` |
 | `app/src` | Giao diện React + TypeScript |
 
@@ -23,6 +24,28 @@ cargo tauri build    # tạo bộ cài NSIS trong target/release/bundle/nsis
 
 Kéo-thả file vào cửa sổ (hoặc bấm "Chọn file…"), chọn định dạng đích, bấm **Chuyển đổi**.
 Chọn nhiều file khác định dạng thì chỉ hiện các định dạng mà tất cả đều chuyển được; file nào đã đúng định dạng đích sẽ được bỏ qua.
+
+## Menu chuột phải trong Explorer
+
+Bật/tắt bằng ô **Menu chuột phải** ở góc trên app, hoặc bằng dòng lệnh:
+
+```powershell
+target\release\convertapp.exe --register     # thêm "Convert to ▸" vào menu chuột phải
+target\release\convertapp.exe --unregister   # gỡ
+```
+
+- Ghi vào `HKCU\Software\Classes` (không cần quyền admin, chỉ áp dụng cho user hiện tại).
+- Trên Windows 11, menu nằm trong **Show more options** (Shift + F10). Đưa lên menu chính là Phase 10.
+- Chọn nhiều file → Explorer mở mỗi file một tiến trình; app gom lại (đợi 300 ms yên lặng) thành **một** cửa sổ nhỏ, chuyển xong thì tự đóng (bỏ tick "Tự đóng khi xong" nếu muốn giữ lại).
+- Menu trỏ tới đúng file exe đã đăng ký. Nên đăng ký bằng bản **release** (`cargo tauri build --no-bundle`): bản debug mở kèm cửa sổ console, còn exe của `cargo tauri dev` cần dev server đang chạy mới hiện giao diện.
+
+Tham số dòng lệnh của app:
+
+```text
+convertapp.exe                         mở cửa sổ chính
+convertapp.exe --to jpg a.png b.png    chuyển nhanh trong cửa sổ nhỏ
+convertapp.exe --register | --unregister
+```
 
 ## Build & test
 

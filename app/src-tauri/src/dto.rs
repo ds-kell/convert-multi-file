@@ -10,7 +10,7 @@ use convertapp_core::{Category, ConvertOptions, Format, HtmlOptions, HtmlTheme, 
 use serde::{Deserialize, Serialize};
 
 /// A format as shown in the UI.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FormatInfo {
     /// Canonical extension, also used as the identifier sent back by the UI.

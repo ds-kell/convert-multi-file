@@ -60,3 +60,9 @@ export interface FileItem extends FileInfo {
 }
 
 export type Summary = Extract<ConvertEvent, { event: "finished" }>["data"];
+
+/** Files from the Explorer context menu, grouped by target (`take_quick_requests`). */
+export interface QuickBatch {
+  target: FormatInfo;
+  paths: string[];
+}
