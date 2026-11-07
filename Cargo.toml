@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/core"]
+members = ["crates/core", "crates/cli"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,8 +8,7 @@ edition = "2024"
 authors = ["truyen.nt"]
 publish = false
 
-# Shared dependency versions: member crates use `dep.workspace = true`
-# so every crate builds against the same version.
+# Internal crates, referenced from members with `convertapp-core.workspace = true`.
 [workspace.dependencies]
 convertapp-core = { path = "crates/core" }
 
