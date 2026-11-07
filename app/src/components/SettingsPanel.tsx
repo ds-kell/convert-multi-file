@@ -1,4 +1,13 @@
-import type { FormatInfo, Paper, PdfPage, ResizeSetting, Settings, Theme, WebSetting } from "../types";
+import type {
+  FormatInfo,
+  OfficeEngine,
+  Paper,
+  PdfPage,
+  ResizeSetting,
+  Settings,
+  Theme,
+  WebSetting,
+} from "../types";
 
 interface SettingsPanelProps {
   /** Selected target format; decides which options are shown. */
@@ -9,6 +18,8 @@ interface SettingsPanelProps {
   imagesOnly: boolean;
   /** All files are web pages (HTML/Markdown): page setup options apply. */
   webPagesOnly: boolean;
+  /** All files are office documents: the office suite choice applies. */
+  officeOnly: boolean;
   settings: Settings;
   disabled: boolean;
   onChange: (settings: Settings) => void;
@@ -23,6 +34,12 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: "none", label: "Không CSS" },
 ];
 
+const OFFICE_ENGINES: { value: OfficeEngine; label: string }[] = [
+  { value: "auto", label: "Tự động (Microsoft Office nếu có)" },
+  { value: "microsoft", label: "Microsoft Office" },
+  { value: "libreoffice", label: "LibreOffice" },
+];
+
 const PDF_PAGES: { value: PdfPage; label: string }[] = [
   { value: "a4", label: "A4 (tự xoay ngang với ảnh rộng)" },
   { value: "image", label: "Bằng kích thước ảnh" },
@@ -34,6 +51,7 @@ export function SettingsPanel({
   fileCount,
   imagesOnly,
   webPagesOnly,
+  officeOnly,
   settings,
   disabled,
   onChange,
@@ -122,6 +140,23 @@ export function SettingsPanel({
           disabled={disabled}
           onChange={(web) => update({ web })}
         />
+      )}
+
+      {officeOnly && target !== null && (
+        <label className="field">
+          <span className="field__label">Bộ Office dùng để chuyển</span>
+          <select
+            value={settings.officeEngine}
+            disabled={disabled}
+            onChange={(e) => update({ officeEngine: e.target.value as OfficeEngine })}
+          >
+            {OFFICE_ENGINES.map((engine) => (
+              <option key={engine.value} value={engine.value}>
+                {engine.label}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       {id === "docx" && (

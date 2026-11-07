@@ -10,6 +10,9 @@ import { useConverter } from "./hooks/useConverter";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { DEFAULT_SETTINGS, type Settings } from "./types";
 
+/** Formats opened by an office suite (Word/Excel/PowerPoint or LibreOffice). */
+const OFFICE_FORMATS = new Set(["docx", "doc", "odt", "rtf", "xlsx", "xls", "ods", "csv", "pptx", "ppt", "odp"]);
+
 /** Main (and only) screen: add files → pick a target → convert. */
 export default function App() {
   const converter = useConverter();
@@ -29,6 +32,7 @@ export default function App() {
   const convertible = ready.length;
   const imagesOnly = convertible > 0 && ready.every((f) => f.format?.category === "image");
   const webPagesOnly = convertible > 0 && ready.every((f) => f.format?.id === "html" || f.format?.id === "md");
+  const officeOnly = convertible > 0 && ready.every((f) => OFFICE_FORMATS.has(f.format?.id ?? ""));
   const canConvert = !busy && target !== null && convertible > 0;
 
   const handlePickFiles = async () => {
@@ -89,6 +93,7 @@ export default function App() {
                 fileCount={convertible}
                 imagesOnly={imagesOnly}
                 webPagesOnly={webPagesOnly}
+                officeOnly={officeOnly}
                 settings={settings}
                 disabled={busy}
                 onChange={setSettings}

@@ -46,6 +46,9 @@ export type PdfPage = "a4" | "image";
 
 export type Paper = "a4" | "a3" | "a5" | "letter" | "legal";
 
+/** Office suite for Word/Excel/PowerPoint files (mirrors `Engine` in Rust). */
+export type OfficeEngine = "auto" | "microsoft" | "libreoffice";
+
 /** Page setup for HTML/Markdown → PDF/PNG (mirrors `WebSetting` in Rust). */
 export interface WebSetting {
   paper: Paper;
@@ -70,6 +73,7 @@ export interface Settings {
   /** Word file whose styles are applied to generated .docx files. */
   referenceDocx: string | null;
   web: WebSetting;
+  officeEngine: OfficeEngine;
   /** `null` = save next to each input file. */
   outputDir: string | null;
 }
@@ -84,6 +88,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "auto",
   referenceDocx: null,
   web: { paper: "a4", landscape: false, marginMm: 10, printBackground: true, viewportWidth: 1280 },
+  officeEngine: "auto",
   outputDir: null,
 };
 
