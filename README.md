@@ -78,8 +78,11 @@ cargo run -p convertapp-cli -- convert --to jpg --quality 85 --out out a.png b.t
 # Ảnh → WebP chất lượng 80, tối đa 1920px
 cargo run -p convertapp-cli -- convert --to webp --quality 80 --max-width 1920 --max-height 1920 *.jpg
 
-# Gộp nhiều ảnh thành 1 PDF
-cargo run -p convertapp-cli -- convert --to pdf --merge scan1.jpg scan2.jpg scan3.png
+# Gộp ảnh và PDF thành 1 PDF (theo đúng thứ tự)
+cargo run -p convertapp-cli -- convert --to pdf --merge bia.jpg noidung.pdf phuluc.pdf
+
+# Nối ảnh chụp màn hình theo chiều dọc thành 1 ảnh
+cargo run -p convertapp-cli -- convert --to png --merge shot1.png shot2.png shot3.png
 
 # Markdown → HTML giao diện tối
 cargo run -p convertapp-cli -- convert --to html --theme dark README.md
@@ -96,7 +99,8 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 |---|---|
 | png, jpg, webp, bmp, gif, tiff, ico | qua lại giữa các định dạng này, và pdf |
 | svg | png, jpg, webp, bmp, gif, tiff, ico |
-| nhiều ảnh | 1 file pdf (mỗi ảnh một trang, `--merge`) |
+| nhiều ảnh và/hoặc PDF | **gộp** thành 1 file pdf, đúng thứ tự (mỗi ảnh 1 trang, mỗi PDF giữ mọi trang) — `--merge` |
+| nhiều ảnh | **nối** thành 1 ảnh png/jpg/webp/bmp/tiff — `--merge --direction vertical\|horizontal --gap <px> [--keep-sizes]` |
 | md | html (trang hoàn chỉnh, có CSS sáng/tối, `--theme auto\|light\|dark\|none`) |
 | html, htm | md |
 | html, md | pdf, png (chụp toàn trang) ³ |

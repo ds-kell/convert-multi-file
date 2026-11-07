@@ -271,6 +271,17 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ---
 
+## Gộp file (n vào → 1 ra) ✅
+
+- [x] Gộp ảnh + PDF thành 1 PDF theo đúng thứ tự (lopdf; giữ thuộc tính trang kế thừa; giữ thứ tự trang)
+- [x] Nối ảnh dọc/ngang thành 1 ảnh: khoảng cách, cùng chiều rộng/cao (không phóng to), giới hạn kích thước
+- [x] `merge_targets()`: app chỉ hiện lựa chọn gộp khi hợp lệ; nhiều PDF → chỉ có "gộp"
+- [x] CLI `--merge --direction --gap --keep-sizes`; app có checkbox + tùy chọn nối, EN/VI
+- [x] Test: thứ tự trang khi trộn PDF + ảnh, PDF do Chrome tạo, nối dọc/ngang, SVG + ảnh thường
+- [ ] Không mang theo bookmark/form của PDF gốc (chỉ nội dung trang); PDF có mật khẩu bị từ chối
+
+---
+
 ## Backlog (chưa xếp phase)
 - ~~pptx/pdf → png từng trang~~: **bỏ**. Nguyên tắc của app: n file vào → n file ra, không tách 1 file thành nhiều file
 - [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở
