@@ -37,8 +37,10 @@ pub enum Format {
     Ico,
     /// Scalable Vector Graphics (input only: rendered to pixels).
     Svg,
-    /// Portable Document Format (output only for now: images → PDF).
+    /// Portable Document Format (output only: from images, or Markdown via Pandoc).
     Pdf,
+    /// Microsoft Word document (via Pandoc).
+    Docx,
     /// Markdown (CommonMark + GitHub extensions).
     Markdown,
     /// HTML web page.
@@ -58,6 +60,7 @@ impl Format {
         Format::Ico,
         Format::Svg,
         Format::Pdf,
+        Format::Docx,
         Format::Markdown,
         Format::Html,
     ];
@@ -75,6 +78,7 @@ impl Format {
             Format::Webp => &["webp"],
             Format::Svg => &["svg", "svgz"],
             Format::Pdf => &["pdf"],
+            Format::Docx => &["docx"],
             Format::Markdown => &["md", "markdown", "mdown", "mkd"],
             Format::Html => &["html", "htm", "xhtml"],
         }
@@ -97,6 +101,7 @@ impl Format {
             Format::Webp => "WebP",
             Format::Svg => "SVG",
             Format::Pdf => "PDF",
+            Format::Docx => "Word",
             Format::Markdown => "Markdown",
             Format::Html => "HTML",
         }
@@ -113,7 +118,7 @@ impl Format {
             | Format::Tiff
             | Format::Ico
             | Format::Svg => Category::Image,
-            Format::Pdf | Format::Markdown | Format::Html => Category::Document,
+            Format::Pdf | Format::Docx | Format::Markdown | Format::Html => Category::Document,
         }
     }
 

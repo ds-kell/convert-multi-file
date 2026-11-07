@@ -46,6 +46,15 @@ pub enum ConvertError {
         reason: String,
     },
 
+    /// An external program (Pandoc, Typst, …) failed or timed out.
+    #[error("{tool} failed: {message}")]
+    External {
+        /// Display name of the program.
+        tool: &'static str,
+        /// What went wrong, usually the program's own error output.
+        message: String,
+    },
+
     /// Reading or writing a file failed at the OS level.
     #[error("I/O error on '{}'", path.display())]
     Io {

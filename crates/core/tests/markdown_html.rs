@@ -32,8 +32,17 @@ fn convert_to(input: &Path, target: Format) -> String {
 #[test]
 fn markdown_is_offered_html_and_back() {
     let registry = Registry::with_defaults();
-    assert_eq!(registry.targets_for(Format::Markdown), vec![Format::Html]);
-    assert_eq!(registry.targets_for(Format::Html), vec![Format::Markdown]);
+    // Built-in pairs; Word/PDF targets also appear when Pandoc is installed.
+    assert!(
+        registry
+            .targets_for(Format::Markdown)
+            .contains(&Format::Html)
+    );
+    assert!(
+        registry
+            .targets_for(Format::Html)
+            .contains(&Format::Markdown)
+    );
 }
 
 #[test]

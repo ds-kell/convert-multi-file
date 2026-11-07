@@ -79,6 +79,10 @@ pub struct ConvertArgs {
     #[arg(long, value_enum, default_value_t = Theme::Auto)]
     pub theme: Theme,
 
+    /// Word file whose styles (fonts, headings, margins) are used for .docx output.
+    #[arg(long, value_name = "DOCX")]
+    pub reference_doc: Option<PathBuf>,
+
     /// Files to convert.
     #[arg(required = true)]
     pub files: Vec<PathBuf>,

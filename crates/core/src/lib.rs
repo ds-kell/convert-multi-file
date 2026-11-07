@@ -38,13 +38,16 @@ mod pipeline;
 mod progress;
 mod registry;
 pub mod text;
+pub mod tools;
 
 pub use converter::{Availability, Converter, Request};
 pub use error::{BoxError, ConvertError, Result, error_chain};
 pub use format::{Category, Format, ParseFormatError};
 pub use job::Job;
-pub use options::{ConvertOptions, HtmlOptions, HtmlTheme, ImageOptions, PdfPageSize, Resize};
+pub use options::{
+    ConvertOptions, DocumentOptions, HtmlOptions, HtmlTheme, ImageOptions, PdfPageSize, Resize,
+};
 pub use output::output_path;
 pub use pipeline::{convert, merge_images_to_pdf};
 pub use progress::{NoProgress, Progress};
-pub use registry::Registry;
+pub use registry::{LockedTarget, Registry};

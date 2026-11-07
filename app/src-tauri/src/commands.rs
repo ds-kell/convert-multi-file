@@ -9,7 +9,7 @@ use convertapp_core::{
 use tauri::State;
 use tauri::ipc::Channel;
 
-use crate::dto::{ConvertEvent, FileInfo, FormatInfo, Inspection, Settings};
+use crate::dto::{ConvertEvent, FileInfo, FormatInfo, Inspection, LockedInfo, Settings};
 
 /// Shared application state, registered with `Builder::manage`.
 #[derive(Debug)]
@@ -59,18 +59,29 @@ pub async fn convert_files(
 
 /// Implementation of [`inspect_files`], separated for readability.
 fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
-    let mut formats = Vec::new();
+    // Formats of files that can be converted now / that were recognised at all.
+    let mut convertible = Vec::new();
+    let mut recognised = Vec::new();
+
     let files = paths
         .into_iter()
         .map(|path| {
             let name = file_name(&path);
             let (format, error) = match Format::detect(&path) {
                 Ok(Some(format)) => {
-                    formats.push(format);
-                    let error = registry
-                        .targets_for(format)
-                        .is_empty()
-                        .then(|| "Chưa hỗ trợ chuyển đổi định dạng này".to_owned());
+                    recognised.push(format);
+                    let error = if registry.targets_for(format).is_empty() {
+                        // Say *why*: a missing tool is fixable, unsupported is not.
+                        Some(
+                            match registry.locked_targets(&[format]).into_iter().next() {
+                                Some(locked) => locked.reason,
+                                None => "Chưa hỗ trợ chuyển đổi định dạng này".to_owned(),
+                            },
+                        )
+                    } else {
+                        convertible.push(format);
+                        None
+                    };
                     (Some(format.into()), error)
                 }
                 Ok(None) => (None, Some("Không nhận diện được định dạng".to_owned())),
@@ -86,12 +97,24 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
         .collect();
 
     let targets = registry
-        .common_targets(&formats)
+        .common_targets(&convertible)
         .into_iter()
         .map(FormatInfo::from)
         .collect();
+    let locked = registry
+        .locked_targets(&recognised)
+        .into_iter()
+        .map(|locked| LockedInfo {
+            format: locked.format.into(),
+            reason: locked.reason,
+        })
+        .collect();
 
-    Inspection { files, targets }
+    Inspection {
+        files,
+        targets,
+        locked,
+    }
 }
 
 /// Converts every file and streams events. Send errors (the window was
@@ -105,7 +128,14 @@ fn run_batch(
 ) {
     let options = settings.to_options();
 
-    if target == Format::Pdf && settings.merge_pdf && paths.len() > 1 {
+    // Merging only makes sense for images; a stale checkbox must not turn a
+    // batch of Markdown → PDF conversions into a failed merge.
+    let all_images = || {
+        paths.iter().all(|p| {
+            matches!(Format::detect(p), Ok(Some(f)) if f.category() == convertapp_core::Category::Image)
+        })
+    };
+    if target == Format::Pdf && settings.merge_pdf && paths.len() > 1 && all_images() {
         run_merge(paths, settings, &options, events);
         return;
     }
@@ -230,8 +260,10 @@ mod tests {
         assert!(result.files[0].error.is_none());
         assert!(result.files[1].error.is_some());
         assert!(result.files[2].error.is_some());
-        // Only the Markdown file is recognised, so its targets are offered.
+        // Only the Markdown file is recognised, so its targets are offered
+        // (plus Word/PDF when Pandoc is installed); no image targets.
         let targets: Vec<_> = result.targets.iter().map(|t| t.id).collect();
-        assert_eq!(targets, ["html"]);
+        assert!(targets.contains(&"html"), "{targets:?}");
+        assert!(!targets.contains(&"png"), "{targets:?}");
     }
 }

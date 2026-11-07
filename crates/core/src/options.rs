@@ -10,6 +10,16 @@ pub struct ConvertOptions {
     pub image: ImageOptions,
     /// Settings used when producing HTML from Markdown.
     pub html: HtmlOptions,
+    /// Settings for document conversions done by Pandoc.
+    pub document: DocumentOptions,
+}
+
+/// Settings for document conversions (Word, PDF from Markdown).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DocumentOptions {
+    /// A `.docx` whose styles (fonts, headings, margins…) are applied to
+    /// generated Word files, like Pandoc's `--reference-doc`.
+    pub reference_docx: Option<std::path::PathBuf>,
 }
 
 /// Settings for HTML output (Markdown → HTML).

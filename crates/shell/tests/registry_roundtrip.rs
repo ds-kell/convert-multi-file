@@ -94,7 +94,7 @@ fn register_twice_replaces_previous_entries() {
 
     let command = read(
         &format!(
-            r"{}\ConvertApp.Menu.md\shell\01_html\command",
+            r"{}\ConvertApp.Menu.png\shell\01_jpg\command",
             root.classes()
         ),
         "",

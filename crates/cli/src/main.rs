@@ -15,8 +15,8 @@ use std::process::ExitCode;
 
 use clap::Parser;
 use convertapp_core::{
-    ConvertOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress, Registry, convert,
-    error_chain, merge_images_to_pdf,
+    ConvertOptions, DocumentOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress, Registry,
+    convert, error_chain, merge_images_to_pdf,
 };
 
 use crate::args::{Cli, Command, ConvertArgs};
@@ -77,6 +77,13 @@ fn list_formats(registry: &Registry, files: &[impl AsRef<Path>]) -> bool {
                     targets.join(", ")
                 };
                 println!("{} ({format}) -> {targets}", file.display());
+                for locked in registry.locked_targets(&[format]) {
+                    println!(
+                        "    {} unavailable: {}",
+                        locked.format.extension(),
+                        locked.reason
+                    );
+                }
             }
             Ok(None) => {
                 eprintln!("error: {}: unknown format", file.display());
@@ -104,6 +111,9 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
         },
         html: HtmlOptions {
             theme: args.theme.into(),
+        },
+        document: DocumentOptions {
+            reference_docx: args.reference_doc.clone(),
         },
     };
 

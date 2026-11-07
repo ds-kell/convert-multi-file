@@ -287,17 +287,19 @@ mod tests {
 
     #[test]
     fn submenu_items_launch_the_exe_with_the_target() {
+        // PNG's targets are all built in, so the order does not depend on
+        // which external tools are installed (unlike Markdown's).
         let plan = plan();
-        let item = find(&plan, r"Software\Classes\ConvertApp.Menu.md\shell\01_html");
-        assert_eq!(get(item, "MUIVerb"), "HTML (.html)");
+        let item = find(&plan, r"Software\Classes\ConvertApp.Menu.png\shell\01_jpg");
+        assert_eq!(get(item, "MUIVerb"), "JPEG (.jpg)");
 
         let command = find(
             &plan,
-            r"Software\Classes\ConvertApp.Menu.md\shell\01_html\command",
+            r"Software\Classes\ConvertApp.Menu.png\shell\01_jpg\command",
         );
         assert_eq!(
             get(command, ""),
-            r#""C:\Apps\ConvertApp.exe" --to html "%1""#
+            r#""C:\Apps\ConvertApp.exe" --to jpg "%1""#
         );
     }
 

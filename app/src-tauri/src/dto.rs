@@ -7,7 +7,8 @@
 use std::path::PathBuf;
 
 use convertapp_core::{
-    Category, ConvertOptions, Format, HtmlOptions, HtmlTheme, ImageOptions, PdfPageSize, Resize,
+    Category, ConvertOptions, DocumentOptions, Format, HtmlOptions, HtmlTheme, ImageOptions,
+    PdfPageSize, Resize,
 };
 use serde::{Deserialize, Serialize};
 
@@ -61,6 +62,18 @@ pub struct Inspection {
     pub files: Vec<FileInfo>,
     /// Targets every recognised file can be converted to.
     pub targets: Vec<FormatInfo>,
+    /// Targets that would be possible after installing a missing tool.
+    pub locked: Vec<LockedInfo>,
+}
+
+/// A target that needs a missing tool, see [`convertapp_core::LockedTarget`].
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LockedInfo {
+    /// The locked format.
+    pub format: FormatInfo,
+    /// Why it is locked and how to unlock it.
+    pub reason: String,
 }
 
 /// HTML colour theme, spelled as in the UI.
@@ -141,6 +154,8 @@ pub struct Settings {
     pub merge_pdf: bool,
     /// Theme for Markdown → HTML.
     pub theme: Theme,
+    /// Word file whose styles are applied to generated .docx files.
+    pub reference_docx: Option<PathBuf>,
     /// Output folder; `None` = next to each input file.
     pub output_dir: Option<PathBuf>,
 }
@@ -154,6 +169,7 @@ impl Default for Settings {
             pdf_page: PdfPage::A4,
             merge_pdf: false,
             theme: Theme::Auto,
+            reference_docx: None,
             output_dir: None,
         }
     }
@@ -181,6 +197,9 @@ impl Settings {
                 ..ImageOptions::default()
             },
             html: HtmlOptions { theme },
+            document: DocumentOptions {
+                reference_docx: self.reference_docx.clone(),
+            },
         }
     }
 }

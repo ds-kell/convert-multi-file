@@ -21,3 +21,7 @@ webp = { version = "0.3.1", default-features = false }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+zip = { version = "9.4.1", default-features = false, features = ["deflate"] }

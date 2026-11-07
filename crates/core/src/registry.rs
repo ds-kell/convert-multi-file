@@ -2,8 +2,20 @@
 
 use std::collections::BTreeSet;
 
-use crate::converters::{HtmlToMarkdownConverter, ImageConverter, MarkdownConverter, SvgConverter};
+use crate::converters::{
+    HtmlToMarkdownConverter, ImageConverter, MarkdownConverter, MarkdownToPdfConverter,
+    PandocConverter, SvgConverter,
+};
 use crate::{ConvertError, Converter, Format, Result};
+
+/// A conversion target that exists but cannot be used right now.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LockedTarget {
+    /// The target format.
+    pub format: Format,
+    /// Why it is unavailable, ideally with how to fix it.
+    pub reason: String,
+}
 
 /// Holds every registered [`Converter`] and answers questions such as
 /// "what can a PNG become?" for the CLI, the UI and the context menu.
@@ -25,7 +37,10 @@ impl Registry {
             .register(ImageConverter)
             .register(SvgConverter)
             .register(MarkdownConverter)
-            .register(HtmlToMarkdownConverter);
+            .register(HtmlToMarkdownConverter)
+            // External tools last: built-in converters win for shared pairs.
+            .register(PandocConverter)
+            .register(MarkdownToPdfConverter);
         registry
     }
 
@@ -44,13 +59,7 @@ impl Registry {
     /// Formats that `input` can be converted to with the converters that are
     /// currently available. Sorted, without duplicates, never contains `input`.
     pub fn targets_for(&self, input: Format) -> Vec<Format> {
-        let targets: BTreeSet<Format> = self
-            .converters()
-            .filter(|c| c.availability().is_available())
-            .flat_map(|c| c.outputs(input))
-            .filter(|&target| target != input)
-            .collect();
-        targets.into_iter().collect()
+        self.reachable(input, true).into_iter().collect()
     }
 
     /// Formats that *every* format in `inputs` can be converted to – used when
@@ -61,15 +70,59 @@ impl Registry {
     /// and skips the PNG). It is not offered when *all* inputs already have
     /// that format, since there would be nothing to do.
     pub fn common_targets(&self, inputs: &[Format]) -> Vec<Format> {
+        self.common(inputs, true).into_iter().collect()
+    }
+
+    /// Targets the files in `inputs` *could* all be converted to, but which
+    /// are unavailable right now (typically because an external program is
+    /// not installed), each with the reason. The UI shows them as locked.
+    pub fn locked_targets(&self, inputs: &[Format]) -> Vec<LockedTarget> {
+        let available = self.common(inputs, true);
+        let Some(&first) = inputs.first() else {
+            return Vec::new();
+        };
+
+        self.common(inputs, false)
+            .into_iter()
+            .filter(|target| !available.contains(target))
+            .map(|format| {
+                // `first` might already be `format`; ask about another input.
+                let from = inputs
+                    .iter()
+                    .copied()
+                    .find(|&f| f != format)
+                    .unwrap_or(first);
+                let reason = match self.find(from, format) {
+                    Err(ConvertError::Unavailable { reason, .. }) => reason,
+                    Err(other) => other.to_string(),
+                    Ok(_) => String::new(), // cannot happen: not available above
+                };
+                LockedTarget { format, reason }
+            })
+            .collect()
+    }
+
+    /// Targets of `input`, optionally only from available converters.
+    fn reachable(&self, input: Format, only_available: bool) -> BTreeSet<Format> {
+        self.converters()
+            .filter(|c| !only_available || c.availability().is_available())
+            .flat_map(|c| c.outputs(input))
+            .filter(|&target| target != input)
+            .collect()
+    }
+
+    /// Implementation of [`common_targets`](Self::common_targets), optionally
+    /// counting unavailable converters too.
+    fn common(&self, inputs: &[Format], only_available: bool) -> BTreeSet<Format> {
         let distinct: BTreeSet<Format> = inputs.iter().copied().collect();
         let mut remaining = distinct.iter().copied();
         let Some(first) = remaining.next() else {
-            return Vec::new();
+            return BTreeSet::new();
         };
 
         // A file "supports" its own format as a no-op target.
         let with_self = |format: Format| -> BTreeSet<Format> {
-            let mut set: BTreeSet<Format> = self.targets_for(format).into_iter().collect();
+            let mut set = self.reachable(format, only_available);
             set.insert(format);
             set
         };
@@ -82,7 +135,7 @@ impl Registry {
         if distinct.len() == 1 {
             common.remove(&first);
         }
-        common.into_iter().collect()
+        common
     }
 
     /// Finds the converter for `from` → `to`.
@@ -150,6 +203,24 @@ mod tests {
     }
 
     #[test]
+    fn locked_targets_list_unavailable_pairs_with_reason() {
+        let mut registry = Registry::new();
+        registry.register(Fake { available: false });
+        let locked = registry.locked_targets(&[Format::Png]);
+        assert_eq!(
+            locked,
+            [LockedTarget {
+                format: Format::Jpeg,
+                reason: "missing tool".into()
+            }]
+        );
+
+        // Once an available converter provides the pair, it is not locked.
+        registry.register(Fake { available: true });
+        assert!(registry.locked_targets(&[Format::Png]).is_empty());
+    }
+
+    #[test]
     fn targets_skip_unavailable_converters() {
         let mut registry = Registry::new();
         registry.register(Fake { available: false });
@@ -212,7 +283,7 @@ mod tests {
         // Unrelated families have nothing in common.
         assert!(
             registry
-                .common_targets(&[Format::Png, Format::Markdown])
+                .common_targets(&[Format::Png, Format::Html])
                 .is_empty()
         );
     }
