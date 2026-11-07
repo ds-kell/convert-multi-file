@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/core", "crates/cli", "app/src-tauri"]
+members = ["crates/core", "crates/cli", "app/src-tauri", "crates/shell"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,7 +13,7 @@ publish = false
 convertapp-core = { path = "crates/core" }
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "deny"
 missing_debug_implementations = "warn"
 
 [workspace.lints.clippy]

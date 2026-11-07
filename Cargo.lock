@@ -658,6 +658,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "convertapp-shell"
+version = "0.1.0"
+dependencies = [
+ "convertapp-core",
+ "thiserror 2.0.21",
+ "windows-sys 0.61.2",
+ "winreg",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

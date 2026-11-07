@@ -1,0 +1,20 @@
+[package]
+name = "convertapp-shell"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+convertapp-core.workspace = true
+thiserror = "2.0.21"
+
+[lints]
+workspace = true
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_UI_Shell"] }
+winreg = "0.56.0"
+
+[target.'cfg(windows)'.dev-dependencies]
+winreg = "0.56.0"
