@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { convertFiles, onQuickPending, takeQuickRequests } from "../api";
-import type { ConvertEvent, FileStatus, FormatInfo, Settings } from "../types";
+import { DEFAULT_SETTINGS, type ConvertEvent, type FileStatus, type FormatInfo, type Settings } from "../types";
 
-/** Settings used for context-menu conversions (no options UI in this window). */
-const QUICK_SETTINGS: Settings = { jpegQuality: 90, theme: "auto", outputDir: null };
+/** Context-menu conversions have no options UI: use the defaults. */
+const QUICK_SETTINGS: Settings = DEFAULT_SETTINGS;
 
 /** One file in the quick-convert window. */
 export interface QuickRow {

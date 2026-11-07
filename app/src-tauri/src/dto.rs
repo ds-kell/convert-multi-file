@@ -6,7 +6,9 @@
 
 use std::path::PathBuf;
 
-use convertapp_core::{Category, ConvertOptions, Format, HtmlOptions, HtmlTheme, ImageOptions};
+use convertapp_core::{
+    Category, ConvertOptions, Format, HtmlOptions, HtmlTheme, ImageOptions, PdfPageSize, Resize,
+};
 use serde::{Deserialize, Serialize};
 
 /// A format as shown in the UI.
@@ -76,12 +78,67 @@ pub enum Theme {
     None,
 }
 
+/// Image resizing as chosen in the UI.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(
+    tag = "mode",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum ResizeSetting {
+    /// Keep the original size.
+    #[default]
+    Original,
+    /// Fit inside a box; a missing side is unconstrained.
+    Fit {
+        max_width: Option<u32>,
+        max_height: Option<u32>,
+    },
+    /// Scale by a percentage.
+    Percent { percent: u32 },
+}
+
+impl From<ResizeSetting> for Resize {
+    fn from(setting: ResizeSetting) -> Self {
+        match setting {
+            ResizeSetting::Original => Resize::Original,
+            ResizeSetting::Fit {
+                max_width,
+                max_height,
+            } => Resize::Fit {
+                max_width,
+                max_height,
+            },
+            ResizeSetting::Percent { percent } => Resize::Percent(percent.max(1)),
+        }
+    }
+}
+
+/// PDF page size, spelled as in the UI.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PdfPage {
+    /// A4 with margins.
+    #[default]
+    A4,
+    /// Page as large as the image.
+    Image,
+}
+
 /// Conversion settings chosen in the UI.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
-    /// JPEG quality 1–100.
-    pub jpeg_quality: u8,
+    /// Lossy quality 1–100 (JPEG, WebP, photos in PDF).
+    pub quality: u8,
+    /// Lossless WebP.
+    pub webp_lossless: bool,
+    /// Image resizing.
+    pub resize: ResizeSetting,
+    /// Page size for images → PDF.
+    pub pdf_page: PdfPage,
+    /// With target PDF: put all images into one document.
+    pub merge_pdf: bool,
     /// Theme for Markdown → HTML.
     pub theme: Theme,
     /// Output folder; `None` = next to each input file.
@@ -91,7 +148,11 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            jpeg_quality: ImageOptions::DEFAULT_QUALITY,
+            quality: ImageOptions::DEFAULT_QUALITY,
+            webp_lossless: false,
+            resize: ResizeSetting::Original,
+            pdf_page: PdfPage::A4,
+            merge_pdf: false,
             theme: Theme::Auto,
             output_dir: None,
         }
@@ -107,9 +168,16 @@ impl Settings {
             Theme::Dark => HtmlTheme::Dark,
             Theme::None => HtmlTheme::None,
         };
+        let pdf_page = match self.pdf_page {
+            PdfPage::A4 => PdfPageSize::A4,
+            PdfPage::Image => PdfPageSize::Image,
+        };
         ConvertOptions {
             image: ImageOptions {
-                quality: self.jpeg_quality,
+                quality: self.quality,
+                webp_lossless: self.webp_lossless,
+                resize: self.resize.into(),
+                pdf_page,
                 ..ImageOptions::default()
             },
             html: HtmlOptions { theme },

@@ -3,7 +3,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use convertapp_core::{Format, Job, Registry, convert, error_chain};
+use convertapp_core::{
+    ConvertOptions, Format, Job, Registry, convert, error_chain, merge_images_to_pdf,
+};
 use tauri::State;
 use tauri::ipc::Channel;
 
@@ -102,6 +104,12 @@ fn run_batch(
     events: &Channel<ConvertEvent>,
 ) {
     let options = settings.to_options();
+
+    if target == Format::Pdf && settings.merge_pdf && paths.len() > 1 {
+        run_merge(paths, settings, &options, events);
+        return;
+    }
+
     let (mut converted, mut skipped, mut failed) = (0, 0, 0);
 
     for (index, path) in paths.iter().enumerate() {
@@ -145,6 +153,51 @@ fn run_batch(
     let _ = events.send(ConvertEvent::Finished {
         converted,
         skipped,
+        failed,
+    });
+}
+
+/// Merges all images into one PDF. Every row shows the same progress and the
+/// same result, since they produce a single file together.
+fn run_merge(
+    paths: &[PathBuf],
+    settings: &Settings,
+    options: &ConvertOptions,
+    events: &Channel<ConvertEvent>,
+) {
+    let all = 0..paths.len();
+    for index in all.clone() {
+        let _ = events.send(ConvertEvent::Started { index });
+    }
+
+    let progress = |fraction: f32| {
+        for index in all.clone() {
+            let _ = events.send(ConvertEvent::Progress { index, fraction });
+        }
+    };
+
+    let result = merge_images_to_pdf(paths, settings.output_dir.as_deref(), options, &progress);
+    let (converted, failed) = match &result {
+        Ok(_) => (paths.len(), 0),
+        Err(_) => (0, paths.len()),
+    };
+    for index in all {
+        let event = match &result {
+            Ok(output) => ConvertEvent::Done {
+                index,
+                output: output.clone(),
+            },
+            Err(err) => ConvertEvent::Failed {
+                index,
+                message: error_chain(err),
+            },
+        };
+        let _ = events.send(event);
+    }
+
+    let _ = events.send(ConvertEvent::Finished {
+        converted,
+        skipped: 0,
         failed,
     });
 }

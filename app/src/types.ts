@@ -28,13 +28,38 @@ export interface Inspection {
 
 export type Theme = "auto" | "light" | "dark" | "none";
 
+/** Image resizing (mirrors `ResizeSetting` in Rust). */
+export type ResizeSetting =
+  | { mode: "original" }
+  | { mode: "fit"; maxWidth: number | null; maxHeight: number | null }
+  | { mode: "percent"; percent: number };
+
+export type PdfPage = "a4" | "image";
+
 /** Settings sent with `convert_files`. */
 export interface Settings {
-  jpegQuality: number;
+  /** Lossy quality 1–100 (JPEG, WebP, photos in PDF). */
+  quality: number;
+  webpLossless: boolean;
+  resize: ResizeSetting;
+  pdfPage: PdfPage;
+  /** With target PDF: one document for all images. */
+  mergePdf: boolean;
   theme: Theme;
   /** `null` = save next to each input file. */
   outputDir: string | null;
 }
+
+/** Settings used when the user has not changed anything. */
+export const DEFAULT_SETTINGS: Settings = {
+  quality: 90,
+  webpLossless: false,
+  resize: { mode: "original" },
+  pdfPage: "a4",
+  mergePdf: false,
+  theme: "auto",
+  outputDir: null,
+};
 
 /** Events streamed by `convert_files`. `index` refers to the `paths` array sent. */
 export type ConvertEvent =

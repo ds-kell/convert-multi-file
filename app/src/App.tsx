@@ -8,9 +8,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { TargetPicker } from "./components/TargetPicker";
 import { useConverter } from "./hooks/useConverter";
 import { useFileDrop } from "./hooks/useFileDrop";
-import type { Settings } from "./types";
-
-const DEFAULT_SETTINGS: Settings = { jpegQuality: 90, theme: "auto", outputDir: null };
+import { DEFAULT_SETTINGS, type Settings } from "./types";
 
 /** Main (and only) screen: add files → pick a target → convert. */
 export default function App() {
@@ -73,7 +71,8 @@ export default function App() {
             <TargetPicker targets={targets} selected={target} disabled={busy} onSelect={setTarget} />
             {targets.length > 0 && (
               <SettingsPanel
-                target={target}
+                target={targets.find((t) => t.id === target) ?? null}
+                fileCount={convertible}
                 settings={settings}
                 disabled={busy}
                 onChange={setSettings}

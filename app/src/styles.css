@@ -189,6 +189,16 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 .field__row { display: flex; align-items: center; gap: 8px; }
 .field select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
 .field input[type="range"] { accent-color: var(--accent); }
+.field input.number {
+  width: 84px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+.field--inline { align-self: flex-end; min-width: 0; padding-bottom: 6px; }
+.field--full { flex-basis: 100%; }
 
 .path { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
