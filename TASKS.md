@@ -12,88 +12,89 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 - [x] Tauri CLI 2.x
 - [x] Pandoc
 - [x] Extension VS Code: rust-analyzer, tauri, lldb, toml
-- [ ] Mở lại VS Code và terminal, chạy `cargo --version` và `cargo tauri --version` xem có ra phiên bản không
+- [x] Kiểm tra `cargo --version`, `cargo tauri --version` (đã chạy được khi build)
 
 ---
 
 ## Phase 1 – Khung project + chuyển ảnh cơ bản ⭐
 
 ### 1.1 Workspace
-- [ ] `git init`, tạo `.gitignore` (target/, node_modules/, dist/)
-- [ ] `Cargo.toml` workspace với các member `crates/core`, `crates/cli`
-- [ ] `rustfmt.toml`, bật `clippy` (thêm phần `[workspace.lints]`)
-- [ ] `README.md`: cách build và chạy
+- [x] `git init`, tạo `.gitignore` (target/, node_modules/, dist/)
+- [x] `Cargo.toml` workspace với các member `crates/core`, `crates/cli`
+- [x] `rustfmt.toml`, bật `clippy` (thêm phần `[workspace.lints]`)
+- [x] `README.md`: cách build và chạy
 
 ### 1.2 Core – nền tảng
-- [ ] enum `Format` (Png, Jpg, Bmp, Gif, Tiff, Ico…) + `from_extension()` + `extension()`
-- [ ] Nhận biết định dạng theo magic bytes (crate `infer`); nếu đuôi file sai thì ưu tiên magic bytes
-- [ ] struct `Job { input, target, output_dir, options }`
-- [ ] trait `Converter` (`id`, `inputs`, `outputs`, `is_available`, `convert`)
-- [ ] `Registry`: đăng ký converter, `targets_for(path)`, `find(input, target)`
-- [ ] `ConvertError` (dùng `thiserror`): Unsupported, ToolMissing, Io, Decode, Encode
-- [ ] Hàm đặt tên file đầu ra: lưu cạnh file gốc, trùng thì `name (1).ext`
-- [ ] trait `Progress` (callback 0–100%), kèm một bản rỗng `NoProgress`
+- [x] enum `Format` (Png, Jpg, Bmp, Gif, Tiff, Ico…) + `from_extension()` + `extension()`
+- [x] Nhận biết định dạng theo magic bytes (crate `infer`); nếu đuôi file sai thì ưu tiên magic bytes
+- [x] struct `Job { input, target, output_dir, options }`
+- [x] trait `Converter` (`id`, `inputs`, `outputs`, `is_available`, `convert`)
+- [x] `Registry`: đăng ký converter, `targets_for(path)`, `find(input, target)`
+- [x] `ConvertError` (dùng `thiserror`): Unsupported, ToolMissing, Io, Decode, Encode
+- [x] Hàm đặt tên file đầu ra: lưu cạnh file gốc, trùng thì `name (1).ext`
+- [x] trait `Progress` (callback 0–100%), kèm một bản rỗng `NoProgress`
 
 ### 1.3 Converter ảnh (crate `image`)
-- [ ] `ImageConverter`: png ↔ jpg ↔ bmp ↔ gif ↔ tiff ↔ ico
-- [ ] Chuyển png có nền trong suốt sang jpg/bmp → điền nền trắng
-- [ ] Chuyển sang ico → resize về tối đa 256px, giữ tỉ lệ
-- [ ] gif động → chỉ lấy frame đầu (ghi chú giới hạn này)
+- [x] `ImageConverter`: png ↔ jpg ↔ bmp ↔ gif ↔ tiff ↔ ico
+- [x] Chuyển png có nền trong suốt sang jpg/bmp → điền nền trắng
+- [x] Chuyển sang ico → resize về tối đa 256px, giữ tỉ lệ
+- [x] gif động → chỉ lấy frame đầu (ghi chú giới hạn này)
 
 ### 1.4 CLI (`clap`)
-- [ ] `convertapp-cli formats <file>` → in ra các định dạng đích
-- [ ] `convertapp-cli convert --to <fmt> [--out <dir>] <files...>`
-- [ ] Mã thoát (exit code) khác 0 nếu có file lỗi, in lỗi rõ ràng từng file
-- [ ] Log bằng `tracing`, bật chi tiết với `-v`
+- [x] `convertapp-cli formats <file>` → in ra các định dạng đích
+- [x] `convertapp-cli convert --to <fmt> [--out <dir>] <files...>`
+- [x] Mã thoát (exit code) khác 0 nếu có file lỗi, in lỗi rõ ràng từng file
+- [x] Log bằng `tracing`, bật chi tiết với `-v`
 
 ### 1.5 Test
-- [ ] `crates/core/tests/fixtures/`: ảnh mẫu nhỏ (png trong suốt, jpg, bmp, gif, tiff)
-- [ ] Unit test: `Format::from_extension`, đặt tên file trùng, Registry
-- [ ] Integration test: convert mỗi cặp định dạng, mở lại file kết quả xem có đúng định dạng không
+- [x] Ảnh mẫu: sinh lúc chạy test từ cùng một bộ pixel (thay cho file nhị phân trong `fixtures/`), để so sánh được kích thước và màu chính xác
+- [x] Unit test: `Format::from_extension`, đặt tên file trùng, Registry
+- [x] Integration test: convert mỗi cặp định dạng, mở lại file kết quả xem có đúng định dạng không
 
 ### ✅ Nghiệm thu
-- [ ] `cargo test` pass, `cargo clippy` không có cảnh báo
-- [ ] Chạy `cargo run -p convertapp-cli -- convert --to jpg a.png` ra `a.jpg` mở xem được
+- [x] `cargo test` pass, `cargo clippy` không có cảnh báo
+- [x] Chạy `cargo run -p convertapp-cli -- convert --to jpg a.png` ra `a.jpg` mở xem được
 
 ---
 
 ## Phase 2 – Markdown ↔ HTML ⭐
 
-- [ ] Thêm `Format::Md`, `Format::Html`
-- [ ] `MarkdownConverter` md → html bằng `comrak` (bật GFM: bảng, checklist, gạch ngang chữ, tự nhận link)
-- [ ] Template HTML: `<head>` có UTF-8 và CSS mặc định nhúng sẵn (kiểu github-markdown), title lấy từ heading đầu tiên
-- [ ] Tùy chọn: chọn CSS sáng/tối hoặc không dùng CSS
-- [ ] Đường dẫn ảnh tương đối giữ nguyên (file html nằm cạnh file md)
-- [ ] `HtmlToMarkdownConverter` html → md bằng `htmd`
-- [ ] Nhận diện encoding của file html (`encoding_rs`, đọc thẻ meta charset)
-- [ ] Fixtures: md có bảng, code block, ảnh, tiếng Việt; html thực tế (lưu từ một trang web)
-- [ ] Test: md → html → md giữ được nội dung chính
+- [x] Thêm `Format::Md`, `Format::Html`
+- [x] `MarkdownConverter` md → html bằng `comrak` (bật GFM: bảng, checklist, gạch ngang chữ, tự nhận link)
+- [x] Template HTML: `<head>` có UTF-8 và CSS mặc định nhúng sẵn (kiểu github-markdown), title lấy từ heading đầu tiên
+- [x] Tùy chọn: chọn CSS sáng/tối hoặc không dùng CSS
+- [x] Đường dẫn ảnh tương đối giữ nguyên (file html nằm cạnh file md)
+- [x] `HtmlToMarkdownConverter` html → md bằng `htmd`
+- [x] Nhận diện encoding của file html (`encoding_rs`, đọc thẻ meta charset)
+- [x] Fixtures: md có bảng, code block, ảnh, tiếng Việt; html thực tế (lưu từ một trang web)
+- [x] Test: md → html → md giữ được nội dung chính
 
 ### ✅ Nghiệm thu
-- [ ] CLI convert `README.md` → html, mở bằng trình duyệt thấy hiển thị đẹp, tiếng Việt không lỗi font
+- [x] CLI convert `README.md` → html (đã kiểm tra nội dung bằng test)
+- [ ] Mở file html bằng trình duyệt, xem bằng mắt: hiển thị đẹp, tiếng Việt không lỗi font
 
 ---
 
 ## Phase 3 – Giao diện Tauri tối thiểu ⭐⭐
 
 ### 3.1 Khởi tạo
-- [ ] `cargo create-tauri-app` (React + TS + Vite) vào thư mục `app/`, thêm `app/src-tauri` vào workspace
-- [ ] `src-tauri` phụ thuộc vào `convertapp-core`
-- [ ] Cấu hình tên app, identifier, icon tạm
+- [x] Dựng tay khung Tauri + React + TS + Vite trong `app/` (frontend ở `app/src`), thêm `app/src-tauri` vào workspace
+- [x] `src-tauri` phụ thuộc vào `convertapp-core`
+- [x] Cấu hình tên app, identifier, icon tạm
 
 ### 3.2 Backend commands
-- [ ] `get_targets(paths) -> Vec<Format>` (chỉ lấy định dạng mà mọi file đã chọn đều hỗ trợ)
-- [ ] `convert(paths, target, options) -> job_id`, chạy ở `spawn_blocking`
-- [ ] Gửi event `job-progress` / `job-done` / `job-error` theo từng file
-- [ ] `open_folder(path)` (`tauri-plugin-opener`)
+- [x] `inspect_files(paths)` → định dạng từng file, lỗi từng file, các định dạng đích chung
+- [x] `convert_files(paths, target, settings, channel)` chạy ở `spawn_blocking`
+- [x] Gửi event qua Tauri `Channel`: started / progress / done / skipped / failed / finished
+- [x] "Mở thư mục": dùng `revealItemInDir` của `tauri-plugin-opener` ngay từ frontend
 
 ### 3.3 Frontend
-- [ ] Vùng kéo-thả file (sự kiện drag-drop của Tauri) + nút "Chọn file" (`tauri-plugin-dialog`)
-- [ ] Danh sách file: tên, định dạng, trạng thái, nút xóa
-- [ ] Danh sách định dạng đích (nút hoặc dropdown), disable nếu không file nào hỗ trợ
-- [ ] Nút Convert, thanh tiến trình, báo lỗi cạnh từng file
-- [ ] Nút "Mở thư mục" khi xong
-- [ ] Giao diện sáng/tối theo hệ thống
+- [x] Vùng kéo-thả file (sự kiện drag-drop của Tauri) + nút "Chọn file" (`tauri-plugin-dialog`)
+- [x] Danh sách file: tên, định dạng, trạng thái, nút xóa
+- [x] Danh sách định dạng đích (nút hoặc dropdown), disable nếu không file nào hỗ trợ
+- [x] Nút Convert, thanh tiến trình, báo lỗi cạnh từng file
+- [x] Nút "Mở thư mục" khi xong
+- [x] Giao diện sáng/tối theo hệ thống
 
 ### ✅ Nghiệm thu
 - [ ] `cargo tauri dev`: kéo 3 ảnh + 1 md vào → chỉ hiện định dạng chung (hoặc báo không có) → convert ảnh thành công

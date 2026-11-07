@@ -12,7 +12,7 @@ App desktop chạy được trên Windows, macOS và Linux để chuyển đổi
 
 | Phần | Chọn |
 |---|---|
-| Ngôn ngữ backend | Rust (edition 2021, bản stable) |
+| Ngôn ngữ backend | Rust (edition 2024, bản stable) |
 | Khung app desktop | Tauri v2 |
 | Giao diện | React + TypeScript + Vite (đổi sang Svelte/Vue được, không ảnh hưởng backend) |
 | Gọi từ dòng lệnh | `clap` (CLI riêng) + `tauri-plugin-cli` (trong app) |
@@ -56,7 +56,7 @@ convert_file/
 │  └─ shell/                  ← đăng ký menu chuột phải (win registry / mac / linux)
 └─ app/
    ├─ src-tauri/              ← backend Tauri, gọi crates/core
-   └─ ui/                     ← React + Vite
+   └─ src/                    ← React + Vite (package.json nằm ở app/, theo layout chuẩn của Tauri)
 ```
 
 ### Thiết kế core
