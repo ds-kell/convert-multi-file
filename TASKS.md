@@ -214,7 +214,7 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ### 8.3 Chọn engine + ảnh slide
 - [x] Thứ tự: MS Office → LibreOffice; chọn được ở CLI (`--office`) và app (ô "Bộ Office")
 - [x] `tools::run` kill **cả cây tiến trình** khi quá giờ (soffice.com → soffice.bin)
-- [ ] **pptx → png từng slide: chuyển sang Backlog.** Một file vào ra nhiều file (mỗi slide một ảnh) cần mở rộng pipeline hiện tại (đang 1 vào → 1 ra)
+- [x] ~~pptx → png từng slide~~: **bỏ** (quyết định 2026-11-08: app giữ nguyên tắc n file vào → n file ra)
 
 ### ✅ Nghiệm thu
 - [x] Test docx (bảng + tiếng Việt), rtf, csv → xlsx → pdf/csv, pptx → pdf/odp: chạy **với cả MS Office và LibreOffice**, đều pass
@@ -272,7 +272,7 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ---
 
 ## Backlog (chưa xếp phase)
-- [ ] pptx/pdf → png từng trang (cần pipeline 1 vào → nhiều ra; PowerPoint có sẵn `Export` từng slide, PDF thì dùng `pdfium-render`)
+- ~~pptx/pdf → png từng trang~~: **bỏ**. Nguyên tắc của app: n file vào → n file ra, không tách 1 file thành nhiều file
 - [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở
 - [ ] HEIC/AVIF
 - [ ] PDF → ảnh / PDF → docx
