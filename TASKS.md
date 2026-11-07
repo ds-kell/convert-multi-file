@@ -151,22 +151,26 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ## Phase 6 – Dùng Pandoc ⭐⭐
 
 ### 6.1 Hạ tầng tool ngoài
-- [ ] Module `tools`: tìm file exe theo PATH + các thư mục cài đặt quen thuộc + đường dẫn người dùng tự đặt trong Settings
-- [ ] `run_tool(cmd, args, timeout)`: lấy stderr, chạy quá lâu thì dừng, ẩn cửa sổ console (`CREATE_NO_WINDOW`)
-- [ ] `is_available()` trả lý do + link hướng dẫn cài; UI hiện định dạng bị khóa kèm lý do
+- [x] Module `tools`: tìm exe theo biến môi trường (`CONVERTAPP_PANDOC`, `CONVERTAPP_TYPST`) → PATH → thư mục cài quen thuộc
+- [ ] Đường dẫn tool tự đặt trong **Settings của app** (hiện mới có qua biến môi trường; cần chỗ lưu settings, để làm cùng Phase 7/8)
+- [x] `tools::run`: lấy stderr, quá thời gian thì kill, ẩn cửa sổ console (`CREATE_NO_WINDOW`)
+- [x] Converter báo `Unavailable` kèm lệnh cài; `Registry::locked_targets`; UI hiện chip 🔒 + lý do
 
 ### 6.2 Converter
-- [ ] md → docx, html → docx
-- [ ] docx → md, docx → html (tách ảnh ra thư mục `name_files/`)
-- [ ] md → pdf qua `--pdf-engine=typst` (kiểm tra có typst trên máy không)
-- [ ] Tùy chọn: file docx mẫu (`--reference-doc`) để định dạng theo style riêng
+- [x] md → docx, html → docx
+- [x] docx → md (ảnh tách ra `name_files/`), docx → html (1 file, ảnh nhúng sẵn)
+- [x] md → pdf qua Typst. **Không** dùng `--pdf-engine=typst` vì Pandoc truyền đường dẫn ảnh `C:\…` mà Typst từ chối trên Windows → làm 2 bước: Pandoc xuất `.typ`, Typst compile với `--root`
+- [x] Font PDF: Segoe UI (Windows) để hiện đủ dấu tiếng Việt
+- [x] Tùy chọn file docx mẫu: `--reference-doc` ở CLI, nút "File Word mẫu" ở app
 
 ### 6.3 Test
-- [ ] Test có `#[ignore]` hoặc tự bỏ qua nếu thiếu pandoc/typst
-- [ ] Fixture docx có bảng + ảnh + tiếng Việt
+- [x] Test tự bỏ qua (in "skipped") nếu thiếu pandoc/typst
+- [x] File docx sinh lúc chạy test từ md có bảng + ảnh + tiếng Việt, kiểm tra bên trong file (XML) — thay cho fixture nhị phân
 
 ### ✅ Nghiệm thu
-- [ ] md tiếng Việt → docx mở bằng Word đúng font, đúng bảng
+- [x] md tiếng Việt → docx, mở bằng **Microsoft Word thật** (qua COM): 1 bảng, Heading 1, tiếng Việt đúng, 1 ảnh
+- [x] md → pdf: render thử thấy tiếng Việt hiển thị đúng
+- [x] Giả lập máy thiếu Pandoc: PDF/DOCX hiện 🔒 kèm lệnh cài
 
 ---
 

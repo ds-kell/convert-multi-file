@@ -92,6 +92,15 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 | nhiều ảnh | 1 file pdf (mỗi ảnh một trang, `--merge`) |
 | md | html (trang hoàn chỉnh, có CSS sáng/tối, `--theme auto\|light\|dark\|none`) |
 | html, htm | md |
+| md, html | docx ¹ |
+| docx | md (ảnh tách ra `<tên>_files/`), html (1 file, ảnh nhúng) ¹ |
+| md | pdf ¹ ² |
+
+¹ Cần [Pandoc](https://pandoc.org): `winget install JohnMacFarlane.Pandoc`.
+² Cần thêm [Typst](https://typst.app): `winget install Typst.Typst`.
+Thiếu tool thì app hiện định dạng đó với biểu tượng 🔒 kèm lệnh cài; `convertapp-cli formats <file>` cũng in ra lý do.
+Nếu tool cài ở chỗ lạ, chỉ đường dẫn bằng biến môi trường `CONVERTAPP_PANDOC` / `CONVERTAPP_TYPST`.
+Dùng `--reference-doc mau.docx` (hoặc nút "File Word mẫu" trong app) để file Word theo font/kiểu tiêu đề/lề của file mẫu.
 
 Tùy chọn ảnh (CLI / app):
 - `--quality 1-100`: JPEG, WebP lossy và ảnh trong PDF. `--lossless`: WebP không mất dữ liệu.
