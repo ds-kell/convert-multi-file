@@ -30,6 +30,9 @@ cargo run -p convertapp-cli -- formats photo.png
 # Chuyển nhiều file, lưu vào thư mục out/
 cargo run -p convertapp-cli -- convert --to jpg --quality 85 --out out a.png b.tiff
 
+# Markdown → HTML giao diện tối
+cargo run -p convertapp-cli -- convert --to html --theme dark README.md
+
 # Log chi tiết
 cargo run -p convertapp-cli -- -vv convert --to ico logo.png
 ```
@@ -41,8 +44,13 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 | Đầu vào | Đầu ra |
 |---|---|
 | png, jpg, bmp, gif, tiff, ico | qua lại giữa các định dạng này |
+| md | html (trang hoàn chỉnh, có CSS sáng/tối, `--theme auto\|light\|dark\|none`) |
+| html, htm | md |
 
 Ghi chú:
+- Markdown hỗ trợ cú pháp GitHub: bảng, checklist, gạch ngang, chú thích, alert `> [!NOTE]`. HTML viết sẵn trong file md được giữ nguyên.
+- HTML → md bỏ `<head>`, `<script>`, `<style>`; tự nhận encoding (UTF-8, `<meta charset>`, Windows-1252…).
+- Đường dẫn ảnh/link tương đối giữ nguyên, nên hãy lưu file kết quả cạnh file gốc (mặc định) để ảnh vẫn hiển thị.
 - Ảnh trong suốt khi chuyển sang jpg/bmp sẽ được điền nền trắng.
 - Chuyển sang ico tự thu nhỏ về tối đa 256×256 (giữ tỉ lệ).
 - gif động chỉ lấy frame đầu.

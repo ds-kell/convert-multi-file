@@ -15,7 +15,9 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use clap::Parser;
-use convertapp_core::{ConvertOptions, Format, ImageOptions, Job, NoProgress, Registry, convert};
+use convertapp_core::{
+    ConvertOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress, Registry, convert,
+};
 
 use crate::args::{Cli, Command, ConvertArgs};
 use crate::report::describe_error;
@@ -97,6 +99,9 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
         image: ImageOptions {
             jpeg_quality: args.quality,
             ..ImageOptions::default()
+        },
+        html: HtmlOptions {
+            theme: args.theme.into(),
         },
     };
 

@@ -10,6 +10,8 @@ use std::str::FromStr;
 pub enum Category {
     /// Raster images (PNG, JPEG, …).
     Image,
+    /// Text documents (Markdown, HTML, …).
+    Document,
 }
 
 /// A file format ConvertApp can read and/or write.
@@ -31,6 +33,10 @@ pub enum Format {
     Tiff,
     /// Windows icon (max. 256×256).
     Ico,
+    /// Markdown (CommonMark + GitHub extensions).
+    Markdown,
+    /// HTML web page.
+    Html,
 }
 
 impl Format {
@@ -42,6 +48,8 @@ impl Format {
         Format::Gif,
         Format::Tiff,
         Format::Ico,
+        Format::Markdown,
+        Format::Html,
     ];
 
     /// All file extensions accepted for this format, lowercase and without a
@@ -54,6 +62,8 @@ impl Format {
             Format::Gif => &["gif"],
             Format::Tiff => &["tiff", "tif"],
             Format::Ico => &["ico"],
+            Format::Markdown => &["md", "markdown", "mdown", "mkd"],
+            Format::Html => &["html", "htm", "xhtml"],
         }
     }
 
@@ -71,6 +81,8 @@ impl Format {
             Format::Gif => "GIF",
             Format::Tiff => "TIFF",
             Format::Ico => "ICO",
+            Format::Markdown => "Markdown",
+            Format::Html => "HTML",
         }
     }
 
@@ -80,7 +92,15 @@ impl Format {
             Format::Png | Format::Jpeg | Format::Bmp | Format::Gif | Format::Tiff | Format::Ico => {
                 Category::Image
             }
+            Format::Markdown | Format::Html => Category::Document,
         }
+    }
+
+    /// `true` for plain-text formats. Their content has no reliable "magic
+    /// bytes" (a README often starts with `<p align="center">`, which looks
+    /// like HTML), so detection trusts their extension instead.
+    pub fn is_text(self) -> bool {
+        matches!(self, Format::Markdown | Format::Html)
     }
 
     /// Looks up a format by file extension. Case-insensitive; a leading dot is
@@ -102,15 +122,23 @@ impl Format {
 
     /// Detects the real format of an existing file.
     ///
-    /// The file's leading "magic bytes" win over its extension, so a JPEG that
-    /// was renamed to `.png` is still treated as JPEG. Text-based formats have
-    /// no reliable signature and fall back to the extension.
+    /// For binary formats the file's leading "magic bytes" win over its
+    /// extension, so a JPEG that was renamed to `.png` is still treated as
+    /// JPEG. Text formats (see [`Format::is_text`]) trust their extension.
     ///
     /// Returns `Ok(None)` when neither method recognises the file.
+    ///
+    /// # Errors
+    /// Fails if the file cannot be opened or read.
     pub fn detect(path: &Path) -> io::Result<Option<Self>> {
         let by_extension = Self::from_path(path);
+        // Always read the header: this also reports missing/unreadable files.
         let by_content =
             infer::get_from_path(path)?.and_then(|kind| Self::from_extension(kind.extension()));
+
+        if let Some(ext) = by_extension.filter(|f| f.is_text()) {
+            return Ok(Some(ext));
+        }
 
         if let (Some(content), Some(ext)) = (by_content, by_extension)
             && content != ext

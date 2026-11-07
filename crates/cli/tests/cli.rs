@@ -87,6 +87,27 @@ fn convert_continues_after_a_failure_and_exits_with_1() {
 }
 
 #[test]
+fn markdown_converts_with_theme_option() {
+    let dir = tempfile::tempdir().unwrap();
+    let md = dir.path().join("notes.md");
+    std::fs::write(&md, "# Ghi chú\n\nXin chào").unwrap();
+
+    let output = run(&[
+        "convert",
+        "--to",
+        "html",
+        "--theme",
+        "dark",
+        md.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success(), "{}", stderr(&output));
+    let html = std::fs::read_to_string(dir.path().join("notes.html")).unwrap();
+    assert!(html.contains("data-theme=\"dark\""));
+    assert!(html.contains("<title>Ghi chú</title>"));
+}
+
+#[test]
 fn unknown_target_format_is_a_usage_error() {
     let output = run(&["convert", "--to", "xyz", "a.png"]);
     assert_eq!(output.status.code(), Some(2));

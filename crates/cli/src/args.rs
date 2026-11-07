@@ -2,8 +2,8 @@
 
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
-use convertapp_core::{Format, ImageOptions};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use convertapp_core::{Format, HtmlTheme, ImageOptions};
 
 /// Convert files between formats (images, documents, …).
 #[derive(Debug, Parser)]
@@ -34,7 +34,7 @@ pub enum Command {
 /// Arguments of the `convert` sub-command.
 #[derive(Debug, Args)]
 pub struct ConvertArgs {
-    /// Target format, as an extension or name: jpg, png, bmp, gif, tiff, ico…
+    /// Target format, as an extension or name: jpg, png, bmp, gif, tiff, ico, md, html…
     #[arg(short, long, value_name = "FORMAT")]
     pub to: Format,
 
@@ -51,9 +51,37 @@ pub struct ConvertArgs {
     )]
     pub quality: u8,
 
+    /// Colour theme of HTML generated from Markdown.
+    #[arg(long, value_enum, default_value_t = Theme::Auto)]
+    pub theme: Theme,
+
     /// Files to convert.
     #[arg(required = true)]
     pub files: Vec<PathBuf>,
+}
+
+/// CLI spelling of [`HtmlTheme`] (clap needs its own `ValueEnum` type).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Theme {
+    /// Follow the reader's light/dark system setting.
+    Auto,
+    /// Always light.
+    Light,
+    /// Always dark.
+    Dark,
+    /// No stylesheet.
+    None,
+}
+
+impl From<Theme> for HtmlTheme {
+    fn from(theme: Theme) -> Self {
+        match theme {
+            Theme::Auto => HtmlTheme::Auto,
+            Theme::Light => HtmlTheme::Light,
+            Theme::Dark => HtmlTheme::Dark,
+            Theme::None => HtmlTheme::None,
+        }
+    }
 }
 
 #[cfg(test)]
