@@ -9,16 +9,31 @@ Viết bằng Rust + Tauri v2. Kế hoạch tổng thể xem [PLAN.md](PLAN.md),
 |---|---|
 | `crates/core` | Engine chuyển đổi: `Format`, trait `Converter`, `Registry`, pipeline, các converter |
 | `crates/cli` | `convertapp-cli`: dùng engine từ dòng lệnh, tiện để test nhanh |
+| `app/src-tauri` | Backend app desktop (Tauri v2): command `inspect_files`, `convert_files` |
+| `app/src` | Giao diện React + TypeScript |
+
+## Chạy app desktop
+
+```powershell
+cd app
+npm install          # lần đầu
+cargo tauri dev      # mở app, tự reload khi sửa code
+cargo tauri build    # tạo bộ cài NSIS trong target/release/bundle/nsis
+```
+
+Kéo-thả file vào cửa sổ (hoặc bấm "Chọn file…"), chọn định dạng đích, bấm **Chuyển đổi**.
+Chọn nhiều file khác định dạng thì chỉ hiện các định dạng mà tất cả đều chuyển được; file nào đã đúng định dạng đích sẽ được bỏ qua.
 
 ## Build & test
 
-Yêu cầu: Rust stable, MSVC Build Tools (Windows). Xem Phase 0 trong PLAN.md.
+Yêu cầu: Rust stable, MSVC Build Tools (Windows), Node.js. Xem Phase 0 trong PLAN.md.
 
 ```powershell
 cargo build                          # build mọi crate
 cargo test --workspace               # chạy toàn bộ test
 cargo clippy --workspace --all-targets
 cargo fmt --all
+npm --prefix app run typecheck       # kiểm tra TypeScript
 ```
 
 ## Dùng CLI

@@ -1,0 +1,251 @@
+/*
+ * ConvertApp UI styles. Colours are tokens on :root, redefined for dark mode,
+ * so components only reference variables.
+ */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1c1f24;
+  --muted: #646b75;
+  --border: #dfe3e8;
+  --accent: #2f5fe0;
+  --accent-text: #ffffff;
+  --accent-soft: #e8eefc;
+  --danger: #c4312d;
+  --success: #1d7f45;
+  --radius: 10px;
+
+  color-scheme: light;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17191d;
+    --surface: #202328;
+    --text: #e8eaed;
+    --muted: #9aa1ab;
+    --border: #33373e;
+    --accent: #6d8ff0;
+    --accent-text: #0e1220;
+    --accent-soft: #263150;
+    --danger: #f08a86;
+    --success: #6fcf97;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  user-select: none; /* desktop-app feel; text inputs still selectable */
+}
+
+button { font: inherit; color: inherit; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+select, input { font: inherit; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+
+/* ---------- Layout ---------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app__header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+
+.app__footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 0 4px;
+  background: var(--bg);
+}
+
+.summary { color: var(--muted); }
+
+/* ---------- Drop zone ---------- */
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  padding: 24px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  transition: border-color 120ms, background 120ms;
+}
+.dropzone--compact { flex-direction: row; min-height: 0; padding: 12px 16px; }
+.dropzone--hover { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone__icon {
+  width: 36px;
+  height: 36px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dropzone--compact .dropzone__icon { width: 22px; height: 22px; }
+.dropzone__text { margin: 0; color: var(--muted); }
+
+/* ---------- File list ---------- */
+
+.file-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(0, 220px) 28px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+.file-row:first-child { border-top: 0; }
+
+.file-row__badge {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+}
+.file-row__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-row__status { display: flex; justify-content: flex-end; min-width: 0; }
+
+.status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.status--muted { color: var(--muted); }
+.status--error { color: var(--danger); }
+
+.progress { width: 100%; height: 6px; accent-color: var(--accent); }
+
+/* ---------- Target picker & settings ---------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.panel__title { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.targets { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  min-width: 64px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover:not(:disabled) { border-color: var(--accent); }
+.chip--selected { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+
+.settings { display: flex; flex-wrap: wrap; gap: 16px 32px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+.field__label { color: var(--muted); font-size: 13px; }
+.field__row { display: flex; align-items: center; gap: 8px; }
+.field select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+.field input[type="range"] { accent-color: var(--accent); }
+
+.path { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.hint { margin: 0; color: var(--muted); }
+
+/* ---------- Buttons ---------- */
+
+.button {
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.button--primary { min-width: 140px; background: var(--accent); color: var(--accent-text); }
+.button--primary:hover:not(:disabled) { filter: brightness(1.08); }
+.button--secondary { border-color: var(--border); background: var(--surface); }
+.button--secondary:hover:not(:disabled) { border-color: var(--accent); }
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.link-button:hover:not(:disabled) { text-decoration: underline; }
+
+.icon-button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-button:hover:not(:disabled) { background: var(--bg); color: var(--danger); }
+
+/* ---------- Banners ---------- */
+
+.banner {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+}
+.banner--error { border-color: var(--danger); color: var(--danger); }
+
+/* ---------- Narrow windows ---------- */
+
+@media (max-width: 640px) {
+  .app { padding: 16px; }
+  .file-row { grid-template-columns: 48px minmax(0, 1fr) 28px; }
+  .file-row__status { grid-column: 2 / 3; justify-content: flex-start; }
+}
