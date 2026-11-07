@@ -23,6 +23,10 @@ pub enum ConvertError {
         path: PathBuf,
     },
 
+    /// An operation that needs input files was given none.
+    #[error("no input files")]
+    NoInput,
+
     /// No registered converter handles this pair of formats.
     #[error("converting {from} to {to} is not supported")]
     Unsupported {

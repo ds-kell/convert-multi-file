@@ -91,7 +91,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            jpeg_quality: ImageOptions::DEFAULT_JPEG_QUALITY,
+            jpeg_quality: ImageOptions::DEFAULT_QUALITY,
             theme: Theme::Auto,
             output_dir: None,
         }
@@ -109,7 +109,7 @@ impl Settings {
         };
         ConvertOptions {
             image: ImageOptions {
-                jpeg_quality: self.jpeg_quality,
+                quality: self.jpeg_quality,
                 ..ImageOptions::default()
             },
             html: HtmlOptions { theme },

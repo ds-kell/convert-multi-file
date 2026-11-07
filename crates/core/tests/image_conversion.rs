@@ -15,6 +15,7 @@ use image::{DynamicImage, ImageFormat, ImageReader, Rgba, RgbaImage};
 const IMAGE_FORMATS: &[Format] = &[
     Format::Png,
     Format::Jpeg,
+    Format::Webp,
     Format::Bmp,
     Format::Gif,
     Format::Tiff,
@@ -51,6 +52,7 @@ fn to_image_format(format: Format) -> ImageFormat {
     match format {
         Format::Png => ImageFormat::Png,
         Format::Jpeg => ImageFormat::Jpeg,
+        Format::Webp => ImageFormat::WebP,
         Format::Bmp => ImageFormat::Bmp,
         Format::Gif => ImageFormat::Gif,
         Format::Tiff => ImageFormat::Tiff,

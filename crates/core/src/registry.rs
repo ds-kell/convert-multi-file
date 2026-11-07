@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::converters::{HtmlToMarkdownConverter, ImageConverter, MarkdownConverter};
+use crate::converters::{HtmlToMarkdownConverter, ImageConverter, MarkdownConverter, SvgConverter};
 use crate::{ConvertError, Converter, Format, Result};
 
 /// Holds every registered [`Converter`] and answers questions such as
@@ -23,6 +23,7 @@ impl Registry {
         let mut registry = Self::new();
         registry
             .register(ImageConverter)
+            .register(SvgConverter)
             .register(MarkdownConverter)
             .register(HtmlToMarkdownConverter);
         registry

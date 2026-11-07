@@ -25,6 +25,8 @@ pub enum Format {
     Png,
     /// JPEG / JPG.
     Jpeg,
+    /// WebP (lossy or lossless; only the first frame of animations is read).
+    Webp,
     /// Windows bitmap.
     Bmp,
     /// Graphics Interchange Format (only the first frame is converted).
@@ -33,6 +35,10 @@ pub enum Format {
     Tiff,
     /// Windows icon (max. 256×256).
     Ico,
+    /// Scalable Vector Graphics (input only: rendered to pixels).
+    Svg,
+    /// Portable Document Format (output only for now: images → PDF).
+    Pdf,
     /// Markdown (CommonMark + GitHub extensions).
     Markdown,
     /// HTML web page.
@@ -40,14 +46,18 @@ pub enum Format {
 }
 
 impl Format {
-    /// Every known format, in display order.
+    /// Every known format, in display order. The order of the variants also
+    /// defines the order targets are listed in menus.
     pub const ALL: &'static [Format] = &[
         Format::Png,
         Format::Jpeg,
+        Format::Webp,
         Format::Bmp,
         Format::Gif,
         Format::Tiff,
         Format::Ico,
+        Format::Svg,
+        Format::Pdf,
         Format::Markdown,
         Format::Html,
     ];
@@ -62,6 +72,9 @@ impl Format {
             Format::Gif => &["gif"],
             Format::Tiff => &["tiff", "tif"],
             Format::Ico => &["ico"],
+            Format::Webp => &["webp"],
+            Format::Svg => &["svg", "svgz"],
+            Format::Pdf => &["pdf"],
             Format::Markdown => &["md", "markdown", "mdown", "mkd"],
             Format::Html => &["html", "htm", "xhtml"],
         }
@@ -81,6 +94,9 @@ impl Format {
             Format::Gif => "GIF",
             Format::Tiff => "TIFF",
             Format::Ico => "ICO",
+            Format::Webp => "WebP",
+            Format::Svg => "SVG",
+            Format::Pdf => "PDF",
             Format::Markdown => "Markdown",
             Format::Html => "HTML",
         }
@@ -89,18 +105,23 @@ impl Format {
     /// The family this format belongs to.
     pub fn category(self) -> Category {
         match self {
-            Format::Png | Format::Jpeg | Format::Bmp | Format::Gif | Format::Tiff | Format::Ico => {
-                Category::Image
-            }
-            Format::Markdown | Format::Html => Category::Document,
+            Format::Png
+            | Format::Jpeg
+            | Format::Webp
+            | Format::Bmp
+            | Format::Gif
+            | Format::Tiff
+            | Format::Ico
+            | Format::Svg => Category::Image,
+            Format::Pdf | Format::Markdown | Format::Html => Category::Document,
         }
     }
 
-    /// `true` for plain-text formats. Their content has no reliable "magic
+    /// `true` for text-based formats. Their content has no reliable "magic
     /// bytes" (a README often starts with `<p align="center">`, which looks
-    /// like HTML), so detection trusts their extension instead.
+    /// like HTML; an SVG is XML), so detection trusts their extension instead.
     pub fn is_text(self) -> bool {
-        matches!(self, Format::Markdown | Format::Html)
+        matches!(self, Format::Markdown | Format::Html | Format::Svg)
     }
 
     /// Looks up a format by file extension. Case-insensitive; a leading dot is

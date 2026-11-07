@@ -108,6 +108,40 @@ fn markdown_converts_with_theme_option() {
 }
 
 #[test]
+fn merge_creates_one_pdf_from_several_images() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = sample_png(dir.path(), "a.png");
+    let b = sample_png(dir.path(), "b.png");
+
+    let output = run(&[
+        "convert",
+        "--to",
+        "pdf",
+        "--merge",
+        "--max-width",
+        "2",
+        a.to_str().unwrap(),
+        b.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(dir.path().join("a.pdf").is_file());
+    assert!(
+        !dir.path().join("b.pdf").exists(),
+        "merged, not one PDF per image"
+    );
+}
+
+#[test]
+fn merge_requires_pdf_target() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = sample_png(dir.path(), "a.png");
+    let output = run(&["convert", "--to", "jpg", "--merge", a.to_str().unwrap()]);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr(&output).contains("--merge only works with --to pdf"));
+}
+
+#[test]
 fn unknown_target_format_is_a_usage_error() {
     let output = run(&["convert", "--to", "xyz", "a.png"]);
     assert_eq!(output.status.code(), Some(2));
