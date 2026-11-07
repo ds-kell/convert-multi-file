@@ -1,4 +1,4 @@
-import type { FormatInfo, PdfPage, ResizeSetting, Settings, Theme } from "../types";
+import type { FormatInfo, Paper, PdfPage, ResizeSetting, Settings, Theme, WebSetting } from "../types";
 
 interface SettingsPanelProps {
   /** Selected target format; decides which options are shown. */
@@ -7,6 +7,8 @@ interface SettingsPanelProps {
   fileCount: number;
   /** All files to convert are images (image options only apply then). */
   imagesOnly: boolean;
+  /** All files are web pages (HTML/Markdown): page setup options apply. */
+  webPagesOnly: boolean;
   settings: Settings;
   disabled: boolean;
   onChange: (settings: Settings) => void;
@@ -31,6 +33,7 @@ export function SettingsPanel({
   target,
   fileCount,
   imagesOnly,
+  webPagesOnly,
   settings,
   disabled,
   onChange,
@@ -40,9 +43,10 @@ export function SettingsPanel({
   const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
 
   const id = target?.id;
-  // Image options apply to image outputs, and to PDFs made from images
-  // (Markdown → PDF is typeset by Typst and has none of them).
+  // Image options apply to image outputs, and to PDFs made from images.
+  // Web pages (HTML/Markdown) rendered by the browser have page options instead.
   const imageTarget = imagesOnly && (target?.category === "image" || id === "pdf");
+  const webRender = webPagesOnly && (id === "pdf" || id === "png");
   const imagePdf = imagesOnly && id === "pdf";
   const showQuality = imagesOnly && (id === "jpg" || (id === "webp" && !settings.webpLossless) || id === "pdf");
 
@@ -111,6 +115,15 @@ export function SettingsPanel({
         </>
       )}
 
+      {webRender && (
+        <WebFields
+          target={id}
+          value={settings.web}
+          disabled={disabled}
+          onChange={(web) => update({ web })}
+        />
+      )}
+
       {id === "docx" && (
         <div className="field field--full">
           <span className="field__label">File Word mẫu (font, kiểu tiêu đề, lề trang)</span>
@@ -174,6 +187,97 @@ export function SettingsPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+const PAPERS: { value: Paper; label: string }[] = [
+  { value: "a4", label: "A4" },
+  { value: "a3", label: "A3" },
+  { value: "a5", label: "A5" },
+  { value: "letter", label: "Letter (Mỹ)" },
+  { value: "legal", label: "Legal (Mỹ)" },
+];
+
+/** Clamps a number input to `[min, max]`, falling back to `fallback`. */
+function clampInt(value: string, min: number, max: number, fallback: number): number {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+}
+
+/** Page setup for HTML/Markdown printed to PDF or captured as PNG. */
+function WebFields({
+  target,
+  value,
+  disabled,
+  onChange,
+}: {
+  target: "pdf" | "png";
+  value: WebSetting;
+  disabled: boolean;
+  onChange: (value: WebSetting) => void;
+}) {
+  const set = (patch: Partial<WebSetting>) => onChange({ ...value, ...patch });
+
+  if (target === "png") {
+    return (
+      <label className="field">
+        <span className="field__label">Chiều rộng cửa sổ chụp (px)</span>
+        <input
+          className="number"
+          type="number"
+          min={320}
+          max={4096}
+          value={value.viewportWidth}
+          disabled={disabled}
+          onChange={(e) => set({ viewportWidth: clampInt(e.target.value, 320, 4096, 1280) })}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <>
+      <label className="field">
+        <span className="field__label">Khổ giấy</span>
+        <select value={value.paper} disabled={disabled} onChange={(e) => set({ paper: e.target.value as Paper })}>
+          {PAPERS.map((paper) => (
+            <option key={paper.value} value={paper.value}>
+              {paper.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span className="field__label">Lề (mm)</span>
+        <input
+          className="number"
+          type="number"
+          min={0}
+          max={100}
+          value={value.marginMm}
+          disabled={disabled}
+          onChange={(e) => set({ marginMm: clampInt(e.target.value, 0, 100, 10) })}
+        />
+      </label>
+      <label className="checkbox field--inline">
+        <input
+          type="checkbox"
+          checked={value.landscape}
+          disabled={disabled}
+          onChange={(e) => set({ landscape: e.target.checked })}
+        />
+        Khổ ngang
+      </label>
+      <label className="checkbox field--inline">
+        <input
+          type="checkbox"
+          checked={value.printBackground}
+          disabled={disabled}
+          onChange={(e) => set({ printBackground: e.target.checked })}
+        />
+        In màu nền
+      </label>
+    </>
   );
 }
 

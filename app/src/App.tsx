@@ -28,6 +28,7 @@ export default function App() {
   const ready = files.filter((f) => f.error === null);
   const convertible = ready.length;
   const imagesOnly = convertible > 0 && ready.every((f) => f.format?.category === "image");
+  const webPagesOnly = convertible > 0 && ready.every((f) => f.format?.id === "html" || f.format?.id === "md");
   const canConvert = !busy && target !== null && convertible > 0;
 
   const handlePickFiles = async () => {
@@ -87,6 +88,7 @@ export default function App() {
                 target={targets.find((t) => t.id === target) ?? null}
                 fileCount={convertible}
                 imagesOnly={imagesOnly}
+                webPagesOnly={webPagesOnly}
                 settings={settings}
                 disabled={busy}
                 onChange={setSettings}

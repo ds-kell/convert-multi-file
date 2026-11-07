@@ -44,6 +44,19 @@ export type ResizeSetting =
 
 export type PdfPage = "a4" | "image";
 
+export type Paper = "a4" | "a3" | "a5" | "letter" | "legal";
+
+/** Page setup for HTML/Markdown → PDF/PNG (mirrors `WebSetting` in Rust). */
+export interface WebSetting {
+  paper: Paper;
+  landscape: boolean;
+  /** Margin on every side, in millimetres (0–100). */
+  marginMm: number;
+  printBackground: boolean;
+  /** Screenshot width in CSS pixels (320–4096). */
+  viewportWidth: number;
+}
+
 /** Settings sent with `convert_files`. */
 export interface Settings {
   /** Lossy quality 1–100 (JPEG, WebP, photos in PDF). */
@@ -56,6 +69,7 @@ export interface Settings {
   theme: Theme;
   /** Word file whose styles are applied to generated .docx files. */
   referenceDocx: string | null;
+  web: WebSetting;
   /** `null` = save next to each input file. */
   outputDir: string | null;
 }
@@ -69,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mergePdf: false,
   theme: "auto",
   referenceDocx: null,
+  web: { paper: "a4", landscape: false, marginMm: 10, printBackground: true, viewportWidth: 1280 },
   outputDir: null,
 };
 
