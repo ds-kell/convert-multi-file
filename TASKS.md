@@ -195,24 +195,31 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ## Phase 8 – Office ⭐⭐⭐
 
 ### 8.1 LibreOffice
-- [ ] Dò `soffice` (đường dẫn cài đặt của Windows/macOS/Linux)
-- [ ] `soffice --headless --convert-to <fmt> --outdir <tmp>` rồi chuyển file kết quả vào thư mục đích
-- [ ] Mỗi job dùng một profile riêng (`-env:UserInstallation=file:///…`) để chạy song song không lỗi
-- [ ] Word: docx/doc/odt/rtf → pdf, docx, odt, txt, html
-- [ ] Excel: xlsx/xls/ods → pdf, xlsx, csv (chọn sheet)
-- [ ] PowerPoint: pptx/ppt/odp → pdf
+- [x] Cài LibreOffice 26.8 vào `E:\DevTools\LibreOffice`; dò `soffice` qua biến `CONVERTAPP_SOFFICE`, PATH, Program Files, **App Paths** (registry)
+- [x] Dùng `soffice.com` (đợi xong và trả mã lỗi), không dùng `soffice.exe` (trả về ngay)
+- [x] `--convert-to` vào thư mục tạm trên cùng ổ đích rồi đổi tên; kiểm tra file ra thật (LibreOffice trả 0 kể cả khi lỗi)
+- [x] Mỗi job một profile riêng → chạy song song được (~3–5 s/file)
+- [x] Văn bản: docx/doc/odt/rtf → pdf, docx, odt, rtf. **Không có txt**: LibreOffice 26.8 treo khi xuất text tài liệu có bảng → txt do Word hoặc Pandoc làm
+- [x] Bảng tính: xlsx/xls/ods/csv → pdf, xlsx, ods, csv (CSV UTF-8, dấu phẩy; xuất sheet đầu)
+- [x] Trình chiếu: pptx/ppt/odp → pdf, pptx, odp
+- [ ] Bỏ: docx → html bằng Office (tạo thư mục ảnh tên rối) → đã có Pandoc làm (1 file)
 
 ### 8.2 MS Office (chỉ Windows)
-- [ ] Script PowerShell nhúng vào app: Word/Excel/PowerPoint COM → `ExportAsFixedFormat` / `SaveAs`
-- [ ] Đảm bảo `Quit()` + giải phóng COM kể cả khi lỗi; chạy quá lâu thì kill
-- [ ] Phát hiện có Office không (registry ClickToRun / ProgID)
+- [x] Script PowerShell nhúng vào app (`assets/office.ps1`): Word/Excel/PowerPoint COM → `ExportAsFixedFormat` / `SaveAs`
+- [x] Luôn đóng tài liệu + `Quit()` + giải phóng COM trong `finally`; ghi PID Office để kill nếu treo; không bao giờ tắt PowerPoint người dùng đang mở; 1 job Office tại một thời điểm
+- [x] Mở chỉ đọc với mật khẩu giả → file có mật khẩu báo lỗi thay vì hiện hộp thoại không ai bấm được
+- [x] Excel đọc CSV đúng UTF-8 + dấu phẩy (mở bản sao `.txt` bằng `OpenText`, vì Excel bỏ qua tùy chọn với đuôi `.csv`)
+- [x] Phát hiện từng app qua ProgID trong registry
 
 ### 8.3 Chọn engine + ảnh slide
-- [ ] Thứ tự ưu tiên: MS Office → LibreOffice; cho phép chọn trong Settings
-- [ ] pptx/pdf → png từng trang bằng `pdfium-render` (đóng gói kèm `pdfium.dll`)
+- [x] Thứ tự: MS Office → LibreOffice; chọn được ở CLI (`--office`) và app (ô "Bộ Office")
+- [x] `tools::run` kill **cả cây tiến trình** khi quá giờ (soffice.com → soffice.bin)
+- [ ] **pptx → png từng slide: chuyển sang Backlog.** Một file vào ra nhiều file (mỗi slide một ảnh) cần mở rộng pipeline hiện tại (đang 1 vào → 1 ra)
 
 ### ✅ Nghiệm thu
-- [ ] docx/xlsx/pptx mẫu → pdf bằng cả 2 engine, so sánh kết quả
+- [x] Test docx (bảng + tiếng Việt), rtf, csv → xlsx → pdf/csv, pptx → pdf/odp: chạy **với cả MS Office và LibreOffice**, đều pass
+- [x] App thật: thả docx + xlsx + pptx → PDF → 3 thành công, không sót tiến trình Office
+- [ ] Bạn tự mở vài PDF để so sánh chất lượng giữa 2 engine
 
 ---
 
@@ -253,6 +260,8 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 ---
 
 ## Backlog (chưa xếp phase)
+- [ ] pptx/pdf → png từng trang (cần pipeline 1 vào → nhiều ra; PowerPoint có sẵn `Export` từng slide, PDF thì dùng `pdfium-render`)
+- [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở
 - [ ] HEIC/AVIF
 - [ ] PDF → ảnh / PDF → docx
 - [ ] Đặt preset convert hay dùng (ví dụ "Ảnh web: webp q80 max 1920px")

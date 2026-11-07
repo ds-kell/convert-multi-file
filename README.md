@@ -97,8 +97,13 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 | docx | md (ảnh tách ra `<tên>_files/`), html (1 file, ảnh nhúng) ¹ |
 | md | pdf ¹ ² |
 
+| docx, doc, odt, rtf | pdf, docx, odt, rtf, txt ⁴ |
+| xlsx, xls, ods, csv | pdf, xlsx, ods, csv ⁴ |
+| pptx, ppt, odp | pdf, pptx, odp ⁴ |
+
 ¹ Cần [Pandoc](https://pandoc.org): `winget install JohnMacFarlane.Pandoc`.
 ² Cần thêm [Typst](https://typst.app): `winget install Typst.Typst`. Chỉ dùng khi máy không có Edge/Chrome (xem ³).
+⁴ Cần **Microsoft Office** (ưu tiên, giống hệt "Save As") hoặc [LibreOffice](https://www.libreoffice.org) (`winget install TheDocumentFoundation.LibreOffice`, miễn phí). Chọn bằng `--office auto|microsoft|libreoffice` hoặc ô "Bộ Office" trong app. Xuất CSV lấy sheet đầu tiên. LibreOffice ở chỗ lạ: `CONVERTAPP_SOFFICE`.
 ³ Dùng Microsoft Edge (có sẵn trên Windows) hoặc Google Chrome chạy ẩn. Tùy chọn: `--paper a4|a3|a5|letter|legal`, `--landscape`, `--margin <mm>`, `--no-background`, `--width <px>` (cho PNG). Trình duyệt ở chỗ lạ: đặt `CONVERTAPP_BROWSER`.
 Thiếu tool thì app hiện định dạng đó với biểu tượng 🔒 kèm lệnh cài; `convertapp-cli formats <file>` cũng in ra lý do.
 Nếu tool cài ở chỗ lạ, chỉ đường dẫn bằng biến môi trường `CONVERTAPP_PANDOC` / `CONVERTAPP_TYPST`.
