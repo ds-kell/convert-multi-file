@@ -27,6 +27,7 @@
 
 #![warn(missing_docs)]
 
+pub mod browser;
 mod converter;
 pub mod converters;
 mod error;
@@ -45,7 +46,8 @@ pub use error::{BoxError, ConvertError, Result, error_chain};
 pub use format::{Category, Format, ParseFormatError};
 pub use job::Job;
 pub use options::{
-    ConvertOptions, DocumentOptions, HtmlOptions, HtmlTheme, ImageOptions, PdfPageSize, Resize,
+    ConvertOptions, DocumentOptions, HtmlOptions, HtmlTheme, ImageOptions, PaperSize, PdfPageSize,
+    Resize, WebOptions,
 };
 pub use output::output_path;
 pub use pipeline::{convert, merge_images_to_pdf};

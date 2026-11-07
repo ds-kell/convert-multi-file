@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use crate::converters::{
     HtmlToMarkdownConverter, ImageConverter, MarkdownConverter, MarkdownToPdfConverter,
-    PandocConverter, SvgConverter,
+    PandocConverter, SvgConverter, WebConverter,
 };
 use crate::{ConvertError, Converter, Format, Result};
 
@@ -38,7 +38,10 @@ impl Registry {
             .register(SvgConverter)
             .register(MarkdownConverter)
             .register(HtmlToMarkdownConverter)
-            // External tools last: built-in converters win for shared pairs.
+            // External programs last: built-in converters win for shared pairs.
+            // The browser comes before Pandoc so Markdown → PDF works with
+            // just Edge/Chrome; Pandoc + Typst remain the fallback.
+            .register(WebConverter)
             .register(PandocConverter)
             .register(MarkdownToPdfConverter);
         registry
@@ -283,7 +286,7 @@ mod tests {
         // Unrelated families have nothing in common.
         assert!(
             registry
-                .common_targets(&[Format::Png, Format::Html])
+                .common_targets(&[Format::Svg, Format::Docx])
                 .is_empty()
         );
     }

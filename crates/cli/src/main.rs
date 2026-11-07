@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use clap::Parser;
 use convertapp_core::{
     ConvertOptions, DocumentOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress, Registry,
-    convert, error_chain, merge_images_to_pdf,
+    WebOptions, convert, error_chain, merge_images_to_pdf,
 };
 
 use crate::args::{Cli, Command, ConvertArgs};
@@ -114,6 +114,13 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
         },
         document: DocumentOptions {
             reference_docx: args.reference_doc.clone(),
+        },
+        web: WebOptions {
+            paper: args.paper.into(),
+            landscape: args.landscape,
+            margin_mm: args.margin,
+            print_background: !args.no_background,
+            viewport_width: args.width,
         },
     };
 

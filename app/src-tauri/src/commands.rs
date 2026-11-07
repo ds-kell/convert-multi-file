@@ -261,9 +261,9 @@ mod tests {
         assert!(result.files[1].error.is_some());
         assert!(result.files[2].error.is_some());
         // Only the Markdown file is recognised, so its targets are offered
-        // (plus Word/PDF when Pandoc is installed); no image targets.
+        // (plus PDF/PNG/Word depending on installed tools); never JPEG.
         let targets: Vec<_> = result.targets.iter().map(|t| t.id).collect();
         assert!(targets.contains(&"html"), "{targets:?}");
-        assert!(!targets.contains(&"png"), "{targets:?}");
+        assert!(!targets.contains(&"jpg"), "{targets:?}");
     }
 }

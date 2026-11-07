@@ -12,6 +12,66 @@ pub struct ConvertOptions {
     pub html: HtmlOptions,
     /// Settings for document conversions done by Pandoc.
     pub document: DocumentOptions,
+    /// Settings for rendering web pages (HTML/Markdown → PDF/PNG).
+    pub web: WebOptions,
+}
+
+/// Page setup used when a browser renders HTML or Markdown.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WebOptions {
+    /// Paper size for PDF output.
+    pub paper: PaperSize,
+    /// Landscape orientation for PDF output.
+    pub landscape: bool,
+    /// Margin on every side of PDF pages, in millimetres.
+    pub margin_mm: u32,
+    /// Print background colours and images (as seen on screen).
+    pub print_background: bool,
+    /// Window width in CSS pixels for PNG screenshots; the height grows to
+    /// fit the whole page.
+    pub viewport_width: u32,
+}
+
+impl Default for WebOptions {
+    fn default() -> Self {
+        Self {
+            paper: PaperSize::A4,
+            landscape: false,
+            margin_mm: 10,
+            print_background: true,
+            viewport_width: 1280,
+        }
+    }
+}
+
+/// Standard paper sizes for printing web pages.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum PaperSize {
+    /// 210 × 297 mm.
+    #[default]
+    A4,
+    /// 297 × 420 mm.
+    A3,
+    /// 148 × 210 mm.
+    A5,
+    /// US Letter, 8.5 × 11 in.
+    Letter,
+    /// US Legal, 8.5 × 14 in.
+    Legal,
+}
+
+impl PaperSize {
+    /// Portrait `(width, height)` in inches.
+    pub fn inches(self) -> (f64, f64) {
+        const MM: f64 = 1.0 / 25.4;
+        match self {
+            PaperSize::A4 => (210.0 * MM, 297.0 * MM),
+            PaperSize::A3 => (297.0 * MM, 420.0 * MM),
+            PaperSize::A5 => (148.0 * MM, 210.0 * MM),
+            PaperSize::Letter => (8.5, 11.0),
+            PaperSize::Legal => (8.5, 14.0),
+        }
+    }
 }
 
 /// Settings for document conversions (Word, PDF from Markdown).

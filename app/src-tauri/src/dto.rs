@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use convertapp_core::{
     Category, ConvertOptions, DocumentOptions, Format, HtmlOptions, HtmlTheme, ImageOptions,
-    PdfPageSize, Resize,
+    PaperSize, PdfPageSize, Resize, WebOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -138,6 +138,76 @@ pub enum PdfPage {
     Image,
 }
 
+/// Paper size for printing web pages, spelled as in the UI.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Paper {
+    /// 210 × 297 mm.
+    #[default]
+    A4,
+    /// 297 × 420 mm.
+    A3,
+    /// 148 × 210 mm.
+    A5,
+    /// US Letter.
+    Letter,
+    /// US Legal.
+    Legal,
+}
+
+impl From<Paper> for PaperSize {
+    fn from(paper: Paper) -> Self {
+        match paper {
+            Paper::A4 => PaperSize::A4,
+            Paper::A3 => PaperSize::A3,
+            Paper::A5 => PaperSize::A5,
+            Paper::Letter => PaperSize::Letter,
+            Paper::Legal => PaperSize::Legal,
+        }
+    }
+}
+
+/// Page setup for HTML/Markdown → PDF/PNG, as chosen in the UI.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WebSetting {
+    /// Paper size.
+    pub paper: Paper,
+    /// Landscape pages.
+    pub landscape: bool,
+    /// Margin in millimetres.
+    pub margin_mm: u32,
+    /// Print backgrounds.
+    pub print_background: bool,
+    /// Screenshot width in pixels.
+    pub viewport_width: u32,
+}
+
+impl Default for WebSetting {
+    fn default() -> Self {
+        let defaults = WebOptions::default();
+        Self {
+            paper: Paper::A4,
+            landscape: defaults.landscape,
+            margin_mm: defaults.margin_mm,
+            print_background: defaults.print_background,
+            viewport_width: defaults.viewport_width,
+        }
+    }
+}
+
+impl From<WebSetting> for WebOptions {
+    fn from(web: WebSetting) -> Self {
+        Self {
+            paper: web.paper.into(),
+            landscape: web.landscape,
+            margin_mm: web.margin_mm.min(100),
+            print_background: web.print_background,
+            viewport_width: web.viewport_width.clamp(320, 4096),
+        }
+    }
+}
+
 /// Conversion settings chosen in the UI.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -156,6 +226,8 @@ pub struct Settings {
     pub theme: Theme,
     /// Word file whose styles are applied to generated .docx files.
     pub reference_docx: Option<PathBuf>,
+    /// Page setup for web pages → PDF/PNG.
+    pub web: WebSetting,
     /// Output folder; `None` = next to each input file.
     pub output_dir: Option<PathBuf>,
 }
@@ -170,6 +242,7 @@ impl Default for Settings {
             merge_pdf: false,
             theme: Theme::Auto,
             reference_docx: None,
+            web: WebSetting::default(),
             output_dir: None,
         }
     }
@@ -200,6 +273,7 @@ impl Settings {
             document: DocumentOptions {
                 reference_docx: self.reference_docx.clone(),
             },
+            web: self.web.into(),
         }
     }
 }

@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use convertapp_core::{Format, HtmlTheme, ImageOptions, PdfPageSize, Resize};
+use convertapp_core::{Format, HtmlTheme, ImageOptions, PaperSize, PdfPageSize, Resize};
 
 /// Convert files between formats (images, documents, …).
 #[derive(Debug, Parser)]
@@ -83,6 +83,26 @@ pub struct ConvertArgs {
     #[arg(long, value_name = "DOCX")]
     pub reference_doc: Option<PathBuf>,
 
+    /// Paper size when printing HTML/Markdown to PDF.
+    #[arg(long, value_enum, default_value_t = Paper::A4)]
+    pub paper: Paper,
+
+    /// Landscape pages when printing HTML/Markdown to PDF.
+    #[arg(long)]
+    pub landscape: bool,
+
+    /// Page margin in millimetres when printing HTML/Markdown to PDF.
+    #[arg(long, value_name = "MM", default_value_t = 10, value_parser = clap::value_parser!(u32).range(0..=100))]
+    pub margin: u32,
+
+    /// Do not print background colours and images.
+    #[arg(long)]
+    pub no_background: bool,
+
+    /// Window width in pixels for HTML/Markdown → PNG screenshots.
+    #[arg(long, value_name = "PX", default_value_t = 1280, value_parser = clap::value_parser!(u32).range(320..=4096))]
+    pub width: u32,
+
     /// Files to convert.
     #[arg(required = true)]
     pub files: Vec<PathBuf>,
@@ -98,6 +118,33 @@ impl ConvertArgs {
                 max_width,
                 max_height,
             },
+        }
+    }
+}
+
+/// CLI spelling of [`PaperSize`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Paper {
+    /// 210 × 297 mm.
+    A4,
+    /// 297 × 420 mm.
+    A3,
+    /// 148 × 210 mm.
+    A5,
+    /// US Letter.
+    Letter,
+    /// US Legal.
+    Legal,
+}
+
+impl From<Paper> for PaperSize {
+    fn from(paper: Paper) -> Self {
+        match paper {
+            Paper::A4 => PaperSize::A4,
+            Paper::A3 => PaperSize::A3,
+            Paper::A5 => PaperSize::A5,
+            Paper::Letter => PaperSize::Letter,
+            Paper::Legal => PaperSize::Legal,
         }
     }
 }
