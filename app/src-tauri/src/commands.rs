@@ -3,9 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use convertapp_core::{
-    ConvertOptions, Format, Job, Registry, convert, error_chain, merge_images_to_pdf,
-};
+use convertapp_core::{ConvertOptions, Format, Job, Registry, convert, error_chain, merge};
 use tauri::State;
 use tauri::ipc::Channel;
 
@@ -59,40 +57,54 @@ pub async fn convert_files(
 
 /// Implementation of [`inspect_files`], separated for readability.
 fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
-    // Formats of files that can be converted now / that were recognised at all.
-    let mut convertible = Vec::new();
-    let mut recognised = Vec::new();
-
-    let files = paths
+    // Detect everything first: whether a file is usable can depend on the
+    // others (a PDF alone converts to nothing, but can be merged with more).
+    let detected: Vec<(PathBuf, Result<Option<Format>, String>)> = paths
         .into_iter()
         .map(|path| {
+            let format = Format::detect(&path).map_err(|e| error_chain(&e));
+            (path, format)
+        })
+        .collect();
+    let recognised: Vec<Format> = detected
+        .iter()
+        .filter_map(|(_, format)| format.clone().ok().flatten())
+        .collect();
+    let merge_targets = if recognised.len() == detected.len() {
+        convertapp_core::merge_targets(&recognised)
+    } else {
+        Vec::new() // an unknown file in the list: nothing to merge safely
+    };
+
+    let mut convertible = Vec::new();
+    let mut merge_only = false;
+    let files = detected
+        .into_iter()
+        .map(|(path, format)| {
             let name = file_name(&path);
-            let (format, error) = match Format::detect(&path) {
+            let (format, error) = match format {
+                Ok(Some(format)) if !registry.targets_for(format).is_empty() => {
+                    convertible.push(format);
+                    (Some(format.into()), None)
+                }
+                // Nothing to convert it to on its own, but it can be merged
+                // with the rest of the selection (e.g. PDFs).
+                Ok(Some(format)) if !merge_targets.is_empty() => {
+                    merge_only = true;
+                    (Some(format.into()), None)
+                }
                 Ok(Some(format)) => {
-                    recognised.push(format);
-                    let error = if registry.targets_for(format).is_empty() {
-                        // Say *why*: a missing tool is fixable, unsupported is not.
-                        Some(
-                            match registry.locked_targets(&[format]).into_iter().next() {
-                                Some(locked) => FileIssue::NeedsTool {
-                                    reason: locked.reason,
-                                },
-                                None => FileIssue::Unsupported,
-                            },
-                        )
-                    } else {
-                        convertible.push(format);
-                        None
+                    // Say *why*: a missing tool is fixable, unsupported is not.
+                    let issue = match registry.locked_targets(&[format]).into_iter().next() {
+                        Some(locked) => FileIssue::NeedsTool {
+                            reason: locked.reason,
+                        },
+                        None => FileIssue::Unsupported,
                     };
-                    (Some(format.into()), error)
+                    (Some(format.into()), Some(issue))
                 }
                 Ok(None) => (None, Some(FileIssue::UnknownFormat)),
-                Err(err) => (
-                    None,
-                    Some(FileIssue::Unreadable {
-                        detail: error_chain(&err),
-                    }),
-                ),
+                Err(detail) => (None, Some(FileIssue::Unreadable { detail })),
             };
             FileInfo {
                 path,
@@ -103,11 +115,18 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
         })
         .collect();
 
-    let targets = registry
-        .common_targets(&convertible)
-        .into_iter()
-        .map(FormatInfo::from)
-        .collect();
+    // With merge-only files in the list, one-by-one conversion would fail
+    // for them, so only merging is offered.
+    let targets = if merge_only {
+        Vec::new()
+    } else {
+        registry
+            .common_targets(&convertible)
+            .into_iter()
+            .map(FormatInfo::from)
+            .collect()
+    };
+    let merge_targets = merge_targets.into_iter().map(FormatInfo::from).collect();
     let locked = registry
         .locked_targets(&recognised)
         .into_iter()
@@ -120,6 +139,7 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
     Inspection {
         files,
         targets,
+        merge_targets,
         locked,
     }
 }
@@ -135,15 +155,17 @@ fn run_batch(
 ) {
     let options = settings.to_options();
 
-    // Merging only makes sense for images; a stale checkbox must not turn a
-    // batch of Markdown → PDF conversions into a failed merge.
-    let all_images = || {
-        paths.iter().all(|p| {
-            matches!(Format::detect(p), Ok(Some(f)) if f.category() == convertapp_core::Category::Image)
-        })
+    // Merge only when this selection can actually be merged into `target`:
+    // a stale checkbox must not turn e.g. Markdown → PDF into a failed merge.
+    let can_merge = || {
+        let formats: Option<Vec<Format>> = paths
+            .iter()
+            .map(|p| Format::detect(p).ok().flatten())
+            .collect();
+        formats.is_some_and(|formats| convertapp_core::merge_targets(&formats).contains(&target))
     };
-    if target == Format::Pdf && settings.merge_pdf && paths.len() > 1 && all_images() {
-        run_merge(paths, settings, &options, events);
+    if settings.merge && can_merge() {
+        run_merge(paths, target, settings, &options, events);
         return;
     }
 
@@ -196,10 +218,12 @@ fn run_batch(
     });
 }
 
-/// Merges all images into one PDF. Every row shows the same progress and the
-/// same result, since they produce a single file together.
+/// Merges all files into one `target` file (PDF or picture). Every row shows
+/// the same progress and the same result, since they produce one file
+/// together.
 fn run_merge(
     paths: &[PathBuf],
+    target: Format,
     settings: &Settings,
     options: &ConvertOptions,
     events: &Channel<ConvertEvent>,
@@ -215,7 +239,13 @@ fn run_merge(
         }
     };
 
-    let result = merge_images_to_pdf(paths, settings.output_dir.as_deref(), options, &progress);
+    let result = merge(
+        paths,
+        target,
+        settings.output_dir.as_deref(),
+        options,
+        &progress,
+    );
     let (converted, failed) = match &result {
         Ok(_) => (paths.len(), 0),
         Err(_) => (0, paths.len()),
@@ -252,6 +282,29 @@ fn file_name(path: &Path) -> String {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn pdfs_alone_can_only_be_merged() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths: Vec<PathBuf> = ["a.pdf", "b.pdf"]
+            .iter()
+            .map(|name| {
+                let path = dir.path().join(name);
+                fs::write(&path, b"%PDF-1.7\n").unwrap();
+                path
+            })
+            .collect();
+
+        let result = inspect(&Registry::with_defaults(), paths.clone());
+        assert!(result.files.iter().all(|f| f.error.is_none()), "merge-only, not errors");
+        assert!(result.targets.is_empty(), "no one-by-one conversion");
+        let merge: Vec<_> = result.merge_targets.iter().map(|t| t.id).collect();
+        assert_eq!(merge, ["pdf"]);
+
+        // A single PDF has nothing to do.
+        let single = inspect(&Registry::with_defaults(), paths[..1].to_vec());
+        assert_eq!(single.files[0].error, Some(FileIssue::Unsupported));
+    }
 
     #[test]
     fn inspect_reports_formats_errors_and_common_targets() {

@@ -10,6 +10,8 @@ export interface Converter {
   files: FileItem[];
   /** Targets all recognised files can be converted to. */
   targets: FormatInfo[];
+  /** Formats all files can be merged into (one output). */
+  mergeTargets: FormatInfo[];
   /** Targets that need a missing program (shown greyed out). */
   locked: LockedTarget[];
   /** `true` while `inspect_files` or `convert_files` is running. */
@@ -31,6 +33,7 @@ export interface Converter {
 export function useConverter(): Converter {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [targets, setTargets] = useState<FormatInfo[]>([]);
+  const [mergeTargets, setMergeTargets] = useState<FormatInfo[]>([]);
   const [locked, setLocked] = useState<LockedTarget[]>([]);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -47,6 +50,7 @@ export function useConverter(): Converter {
     if (paths.length === 0) {
       setFiles([]);
       setTargets([]);
+      setMergeTargets([]);
       setLocked([]);
       return;
     }
@@ -55,6 +59,7 @@ export function useConverter(): Converter {
       const result = await inspectFiles(paths);
       setFiles(result.files.map((file) => ({ ...file, status: IDLE })));
       setTargets(result.targets);
+      setMergeTargets(result.mergeTargets);
       setLocked(result.locked);
     } catch (e) {
       setError(String(e));
@@ -83,6 +88,7 @@ export function useConverter(): Converter {
   const clear = useCallback(() => {
     setFiles([]);
     setTargets([]);
+    setMergeTargets([]);
     setLocked([]);
     setSummary(null);
     setError(null);
@@ -138,5 +144,5 @@ export function useConverter(): Converter {
     }
   }, []);
 
-  return { files, targets, locked, busy, summary, error, addFiles, removeFile, clear, convert };
+  return { files, targets, mergeTargets, locked, busy, summary, error, addFiles, removeFile, clear, convert };
 }

@@ -33,6 +33,7 @@ pub mod converters;
 mod error;
 mod format;
 mod job;
+pub mod merge;
 mod options;
 mod output;
 mod pipeline;
@@ -45,11 +46,12 @@ pub use converter::{Availability, Converter, Request};
 pub use error::{BoxError, ConvertError, Result, error_chain};
 pub use format::{Category, Format, ParseFormatError};
 pub use job::Job;
+pub use merge::{merge, merge_targets};
 pub use options::{
     ConvertOptions, DocumentOptions, HtmlOptions, HtmlTheme, ImageOptions, OfficeEngine,
-    OfficeOptions, PaperSize, PdfPageSize, Resize, WebOptions,
+    OfficeOptions, PaperSize, PdfPageSize, Resize, StitchDirection, StitchOptions, WebOptions,
 };
 pub use output::output_path;
-pub use pipeline::{convert, merge_images_to_pdf};
+pub use pipeline::convert;
 pub use progress::{NoProgress, Progress};
 pub use registry::{LockedTarget, Registry};

@@ -133,12 +133,41 @@ fn merge_creates_one_pdf_from_several_images() {
 }
 
 #[test]
-fn merge_requires_pdf_target() {
+fn merge_into_a_picture_stitches_images() {
     let dir = tempfile::tempdir().unwrap();
     let a = sample_png(dir.path(), "a.png");
-    let output = run(&["convert", "--to", "jpg", "--merge", a.to_str().unwrap()]);
+    let b = sample_png(dir.path(), "b.png");
+
+    let output = run(&[
+        "convert",
+        "--to",
+        "jpg",
+        "--merge",
+        "--direction",
+        "horizontal",
+        "--gap",
+        "2",
+        a.to_str().unwrap(),
+        b.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success(), "{}", stderr(&output));
+    let joined = image::open(dir.path().join("a.jpg")).unwrap();
+    // Two 4×4 images side by side with a 2 px gap.
+    assert_eq!((joined.width(), joined.height()), (10, 4));
+}
+
+#[test]
+fn merge_into_unsupported_format_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = sample_png(dir.path(), "a.png");
+    let output = run(&["convert", "--to", "docx", "--merge", a.to_str().unwrap()]);
     assert_eq!(output.status.code(), Some(1));
-    assert!(stderr(&output).contains("--merge only works with --to pdf"));
+    assert!(
+        stderr(&output).contains("not supported"),
+        "{}",
+        stderr(&output)
+    );
 }
 
 #[test]

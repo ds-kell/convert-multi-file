@@ -31,6 +31,8 @@ export interface Inspection {
   files: FileInfo[];
   /** Targets every recognised file can be converted to. */
   targets: FormatInfo[];
+  /** Formats all files can be merged into, as one output. */
+  mergeTargets: FormatInfo[];
   /** Targets that need a program that is not installed. */
   locked: LockedTarget[];
 }
@@ -50,6 +52,15 @@ export type ResizeSetting =
   | { mode: "percent"; percent: number };
 
 export type PdfPage = "a4" | "image";
+
+/** How images are joined into one picture (mirrors `StitchSetting` in Rust). */
+export interface StitchSetting {
+  direction: "vertical" | "horizontal";
+  /** Pixels of empty space between images. */
+  gap: number;
+  /** Shrink images to a common width/height. */
+  sameSize: boolean;
+}
 
 export type Paper = "a4" | "a3" | "a5" | "letter" | "legal";
 
@@ -74,8 +85,9 @@ export interface Settings {
   webpLossless: boolean;
   resize: ResizeSetting;
   pdfPage: PdfPage;
-  /** With target PDF: one document for all images. */
-  mergePdf: boolean;
+  /** Join all files into one output instead of one output per file. */
+  merge: boolean;
+  stitch: StitchSetting;
   theme: Theme;
   /** Word file whose styles are applied to generated .docx files. */
   referenceDocx: string | null;
@@ -91,7 +103,8 @@ export const DEFAULT_SETTINGS: Settings = {
   webpLossless: false,
   resize: { mode: "original" },
   pdfPage: "a4",
-  mergePdf: false,
+  merge: false,
+  stitch: { direction: "vertical", gap: 0, sameSize: true },
   theme: "auto",
   referenceDocx: null,
   web: { paper: "a4", landscape: false, marginMm: 10, printBackground: true, viewportWidth: 1280 },

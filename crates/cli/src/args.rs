@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use convertapp_core::{
-    Format, HtmlTheme, ImageOptions, OfficeEngine, PaperSize, PdfPageSize, Resize,
+    Format, HtmlTheme, ImageOptions, OfficeEngine, PaperSize, PdfPageSize, Resize, StitchDirection,
 };
 
 /// Convert files between formats (images, documents, …).
@@ -73,9 +73,23 @@ pub struct ConvertArgs {
     #[arg(long, value_enum, default_value_t = Page::A4)]
     pub page: Page,
 
-    /// With --to pdf: put all images into a single PDF (one page each).
+    /// Join all files into one: images and PDFs into one PDF (--to pdf), or
+    /// images into one picture (--to png/jpg/webp/bmp/tiff).
     #[arg(long)]
     pub merge: bool,
+
+    /// With --merge into a picture: stack images vertically or horizontally.
+    #[arg(long, value_enum, default_value_t = Direction::Vertical)]
+    pub direction: Direction,
+
+    /// With --merge into a picture: pixels of empty space between images.
+    #[arg(long, value_name = "PX", default_value_t = 0)]
+    pub gap: u32,
+
+    /// With --merge into a picture: keep every image at its own size instead
+    /// of shrinking them to a common width/height.
+    #[arg(long)]
+    pub keep_sizes: bool,
 
     /// Colour theme of HTML generated from Markdown.
     #[arg(long, value_enum, default_value_t = Theme::Auto)]
@@ -124,6 +138,24 @@ impl ConvertArgs {
                 max_width,
                 max_height,
             },
+        }
+    }
+}
+
+/// CLI spelling of [`StitchDirection`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Direction {
+    /// One below the other.
+    Vertical,
+    /// Side by side.
+    Horizontal,
+}
+
+impl From<Direction> for StitchDirection {
+    fn from(direction: Direction) -> Self {
+        match direction {
+            Direction::Vertical => StitchDirection::Vertical,
+            Direction::Horizontal => StitchDirection::Horizontal,
         }
     }
 }

@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use clap::Parser;
 use convertapp_core::{
     ConvertOptions, DocumentOptions, Format, HtmlOptions, ImageOptions, Job, NoProgress,
-    OfficeOptions, Registry, WebOptions, convert, error_chain, merge_images_to_pdf,
+    OfficeOptions, Registry, StitchOptions, WebOptions, convert, error_chain, merge,
 };
 
 use crate::args::{Cli, Command, ConvertArgs};
@@ -125,10 +125,15 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
         office: OfficeOptions {
             engine: args.office.into(),
         },
+        stitch: StitchOptions {
+            direction: args.direction.into(),
+            gap: args.gap,
+            same_size: !args.keep_sizes,
+        },
     };
 
     if args.merge {
-        return merge_to_pdf(args, &options);
+        return merge_files(args, &options);
     }
 
     let mut failed = 0usize;
@@ -154,20 +159,18 @@ fn convert_files(registry: &Registry, args: &ConvertArgs) -> bool {
     failed == 0
 }
 
-/// `convert --to pdf --merge`: all files into one PDF. All-or-nothing: if any
-/// input cannot be read, no PDF is written.
-fn merge_to_pdf(args: &ConvertArgs, options: &ConvertOptions) -> bool {
-    if args.to != Format::Pdf {
-        eprintln!("error: --merge only works with --to pdf");
-        return false;
-    }
-    match merge_images_to_pdf(&args.files, args.out.as_deref(), options, &NoProgress) {
+/// `convert --merge`: all files into one output. All-or-nothing: if any input
+/// cannot be read, nothing is written.
+fn merge_files(args: &ConvertArgs, options: &ConvertOptions) -> bool {
+    match merge(
+        &args.files,
+        args.to,
+        args.out.as_deref(),
+        options,
+        &NoProgress,
+    ) {
         Ok(output) => {
-            println!(
-                "[ok]    {} images -> {}",
-                args.files.len(),
-                output.display()
-            );
+            println!("[ok]    {} files -> {}", args.files.len(), output.display());
             true
         }
         Err(err) => {

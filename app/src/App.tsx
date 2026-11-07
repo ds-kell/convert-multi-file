@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { insideTauri, pickFiles, pickFolder, pickWordTemplate, revealInFolder } from "./api";
 import { ContextMenuToggle } from "./components/ContextMenuToggle";
@@ -19,7 +19,13 @@ const OFFICE_FORMATS = new Set(["docx", "doc", "odt", "rtf", "xlsx", "xls", "ods
 export default function App() {
   const { t, tn } = useI18n();
   const converter = useConverter();
-  const { files, targets, busy, summary, error } = converter;
+  const { files, targets, mergeTargets, busy, summary, error } = converter;
+
+  // One-by-one targets first, then formats the files can only be merged into.
+  const offered = useMemo(
+    () => [...targets, ...mergeTargets.filter((m) => !targets.some((t) => t.id === m.id))],
+    [targets, mergeTargets],
+  );
 
   const [target, setTarget] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -28,14 +34,16 @@ export default function App() {
 
   // Drop the selected target when it is no longer valid for the file list.
   useEffect(() => {
-    if (target !== null && !targets.some((t) => t.id === target)) setTarget(null);
-  }, [targets, target]);
+    if (target !== null && !offered.some((t) => t.id === target)) setTarget(null);
+  }, [offered, target]);
 
   const ready = files.filter((f) => f.error === null);
   const convertible = ready.length;
   const imagesOnly = convertible > 0 && ready.every((f) => f.format?.category === "image");
   const webPagesOnly = convertible > 0 && ready.every((f) => f.format?.id === "html" || f.format?.id === "md");
   const officeOnly = convertible > 0 && ready.every((f) => OFFICE_FORMATS.has(f.format?.id ?? ""));
+  const mergeAvailable = convertible > 1 && mergeTargets.some((m) => m.id === target);
+  const mergeForced = mergeAvailable && !targets.some((t) => t.id === target);
   const canConvert = !busy && target !== null && convertible > 0;
 
   const handlePickFiles = async () => {
@@ -54,7 +62,10 @@ export default function App() {
   };
 
   const handleConvert = () => {
-    if (target !== null) void converter.convert(target, settings);
+    if (target === null) return;
+    // Merge-only targets always merge; otherwise only if the box is ticked.
+    const merge = mergeForced || (mergeAvailable && settings.merge);
+    void converter.convert(target, { ...settings, merge });
   };
 
   return (
@@ -85,19 +96,21 @@ export default function App() {
           <section className="panel">
             <h2 className="panel__title">{t("app.convertTo")}</h2>
             <TargetPicker
-              targets={targets}
+              targets={offered}
               locked={converter.locked}
               selected={target}
               disabled={busy}
               onSelect={setTarget}
             />
-            {targets.length > 0 && (
+            {offered.length > 0 && (
               <SettingsPanel
-                target={targets.find((t) => t.id === target) ?? null}
+                target={offered.find((t) => t.id === target) ?? null}
                 fileCount={convertible}
                 imagesOnly={imagesOnly}
                 webPagesOnly={webPagesOnly}
                 officeOnly={officeOnly}
+                mergeAvailable={mergeAvailable}
+                mergeForced={mergeForced}
                 settings={settings}
                 disabled={busy}
                 onChange={setSettings}

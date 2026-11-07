@@ -1,14 +1,10 @@
-//! Running conversions from start to finish: format detection, converter
-//! lookup and safe output writing.
+//! Running a conversion from start to finish: format detection, converter
+//! lookup and safe output writing (shared with [`crate::merge`]).
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::converters::image::{RASTER_INPUTS, decode, pdf::PdfBuilder, transform};
-use crate::converters::svg;
-use crate::{
-    ConvertError, ConvertOptions, Format, Job, Progress, Registry, Request, Result, output_path,
-};
+use crate::{ConvertError, Format, Job, Progress, Registry, Request, Result, output_path};
 
 /// Converts one file and returns the path of the file that was written.
 ///
@@ -62,59 +58,8 @@ pub fn convert(registry: &Registry, job: &Job, progress: &dyn Progress) -> Resul
     Ok(final_path)
 }
 
-/// Combines several images (raster or SVG) into **one** PDF, one image per
-/// page, in the order given. The file is named after the first input.
-///
-/// `progress` goes from 0 to 1 across all inputs.
-///
-/// # Errors
-/// [`ConvertError::NoInput`] for an empty list, [`ConvertError::Unsupported`]
-/// if an input is not an image, or any error from reading the inputs.
-/// Nothing is written on failure.
-pub fn merge_images_to_pdf(
-    inputs: &[PathBuf],
-    output_dir: Option<&Path>,
-    options: &ConvertOptions,
-    progress: &dyn Progress,
-) -> Result<PathBuf> {
-    let Some(first) = inputs.first() else {
-        return Err(ConvertError::NoInput);
-    };
-
-    progress.set(0.0);
-    let image_options = &options.image;
-    let mut pdf = PdfBuilder::new(image_options);
-    for (done, input) in inputs.iter().enumerate() {
-        let image = match detect(input)? {
-            Format::Svg => svg::render(input, image_options.resize)?,
-            format if RASTER_INPUTS.contains(&format) => {
-                transform::resize(decode::load(input)?, image_options.resize)
-            }
-            format => {
-                return Err(ConvertError::Unsupported {
-                    from: format,
-                    to: Format::Pdf,
-                });
-            }
-        };
-        pdf.add_image(&image)
-            .map_err(|e| ConvertError::encode(input, e))?;
-        progress.set((done + 1) as f32 / (inputs.len() + 1) as f32);
-    }
-
-    let dir = destination_dir(first, output_dir)?;
-    let bytes = pdf.finish();
-    let final_path = write_output(first, Format::Pdf, &dir, |temp| {
-        fs::write(temp, &bytes).map_err(|e| ConvertError::io(temp, e))
-    })?;
-
-    progress.set(1.0);
-    tracing::info!(output = %final_path.display(), pages = inputs.len(), "merged into PDF");
-    Ok(final_path)
-}
-
 /// Detects the format of `input`, failing if it is unknown.
-fn detect(input: &Path) -> Result<Format> {
+pub(crate) fn detect(input: &Path) -> Result<Format> {
     Format::detect(input)
         .map_err(|e| ConvertError::io(input, e))?
         .ok_or_else(|| ConvertError::UnknownFormat {
@@ -125,7 +70,7 @@ fn detect(input: &Path) -> Result<Format> {
 /// Runs `write` against a hidden temporary file in `dir`, then moves the file
 /// to a free name derived from `name_from` and `target` (see [`output_path`]).
 /// If `write` fails, the temporary file is deleted.
-fn write_output(
+pub(crate) fn write_output(
     name_from: &Path,
     target: Format,
     dir: &Path,
@@ -150,7 +95,7 @@ fn write_output(
 
 /// Resolves (and creates if needed) the folder the output goes into:
 /// `output_dir`, or the input's own folder.
-fn destination_dir(input: &Path, output_dir: Option<&Path>) -> Result<PathBuf> {
+pub(crate) fn destination_dir(input: &Path, output_dir: Option<&Path>) -> Result<PathBuf> {
     match output_dir {
         Some(dir) => {
             fs::create_dir_all(dir).map_err(|e| ConvertError::io(dir, e))?;

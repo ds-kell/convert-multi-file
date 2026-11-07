@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use convertapp_core::{
     ConvertError, ConvertOptions, Format, ImageOptions, Job, NoProgress, PdfPageSize, Registry,
-    Resize, convert, merge_images_to_pdf,
+    Resize, convert, merge,
 };
 use image::{DynamicImage, ImageFormat, ImageReader, Rgb, RgbImage};
 
@@ -340,8 +340,14 @@ fn merge_puts_every_image_on_its_own_page() {
         svg_fixture(dir.path()),
     ];
 
-    let output =
-        merge_images_to_pdf(&inputs, None, &ConvertOptions::default(), &NoProgress).unwrap();
+    let output = merge(
+        &inputs,
+        Format::Pdf,
+        None,
+        &ConvertOptions::default(),
+        &NoProgress,
+    )
+    .unwrap();
 
     assert_eq!(
         output,
@@ -364,11 +370,23 @@ fn merge_rejects_non_images_without_writing_anything() {
     let md = dir.path().join("notes.md");
     fs::write(&md, "# hi").unwrap();
 
-    let err =
-        merge_images_to_pdf(&[png, md], None, &ConvertOptions::default(), &NoProgress).unwrap_err();
+    let err = merge(
+        &[png, md],
+        Format::Pdf,
+        None,
+        &ConvertOptions::default(),
+        &NoProgress,
+    )
+    .unwrap_err();
     assert!(matches!(err, ConvertError::Unsupported { .. }), "{err:?}");
     assert!(!dir.path().join("a.pdf").exists());
 
-    let empty = merge_images_to_pdf(&[], None, &ConvertOptions::default(), &NoProgress);
+    let empty = merge(
+        &[],
+        Format::Pdf,
+        None,
+        &ConvertOptions::default(),
+        &NoProgress,
+    );
     assert!(matches!(empty, Err(ConvertError::NoInput)));
 }

@@ -6,6 +6,7 @@ import type {
   PdfPage,
   ResizeSetting,
   Settings,
+  StitchSetting,
   Theme,
   WebSetting,
 } from "../types";
@@ -21,6 +22,10 @@ interface SettingsPanelProps {
   webPagesOnly: boolean;
   /** All files are office documents: the office suite choice applies. */
   officeOnly: boolean;
+  /** The files can be merged into one file of the selected target. */
+  mergeAvailable: boolean;
+  /** Merging is the only option (e.g. several PDFs): checkbox locked on. */
+  mergeForced: boolean;
   settings: Settings;
   disabled: boolean;
   onChange: (settings: Settings) => void;
@@ -35,6 +40,8 @@ export function SettingsPanel({
   imagesOnly,
   webPagesOnly,
   officeOnly,
+  mergeAvailable,
+  mergeForced,
   settings,
   disabled,
   onChange,
@@ -43,6 +50,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const { t, tn } = useI18n();
   const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+  const merging = mergeForced || (mergeAvailable && settings.merge);
 
   const themes: { value: Theme; label: string }[] = [
     { value: "auto", label: t("settings.theme.auto") },
@@ -120,18 +128,23 @@ export function SettingsPanel({
               ))}
             </select>
           </label>
-          {fileCount > 1 && (
-            <label className="checkbox field--inline">
-              <input
-                type="checkbox"
-                checked={settings.mergePdf}
-                disabled={disabled}
-                onChange={(e) => update({ mergePdf: e.target.checked })}
-              />
-              {tn("settings.merge", fileCount)}
-            </label>
-          )}
         </>
+      )}
+
+      {mergeAvailable && (
+        <label className="checkbox field--inline" title={mergeForced ? t("settings.mergeOnly") : undefined}>
+          <input
+            type="checkbox"
+            checked={merging}
+            disabled={disabled || mergeForced}
+            onChange={(e) => update({ merge: e.target.checked })}
+          />
+          {tn("settings.merge", fileCount)}
+        </label>
+      )}
+
+      {merging && target?.category === "image" && (
+        <StitchFields value={settings.stitch} disabled={disabled} onChange={(stitch) => update({ stitch })} />
       )}
 
       {webRender && (
@@ -312,6 +325,57 @@ function WebFields({
           onChange={(e) => set({ printBackground: e.target.checked })}
         />
         {t("settings.background")}
+      </label>
+    </>
+  );
+}
+
+/** Layout of images joined into one picture. */
+function StitchFields({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: StitchSetting;
+  disabled: boolean;
+  onChange: (value: StitchSetting) => void;
+}) {
+  const { t } = useI18n();
+  const set = (patch: Partial<StitchSetting>) => onChange({ ...value, ...patch });
+
+  return (
+    <>
+      <label className="field">
+        <span className="field__label">{t("settings.stitch.direction")}</span>
+        <select
+          value={value.direction}
+          disabled={disabled}
+          onChange={(e) => set({ direction: e.target.value as StitchSetting["direction"] })}
+        >
+          <option value="vertical">{t("settings.stitch.vertical")}</option>
+          <option value="horizontal">{t("settings.stitch.horizontal")}</option>
+        </select>
+      </label>
+      <label className="field">
+        <span className="field__label">{t("settings.stitch.gap")}</span>
+        <input
+          className="number"
+          type="number"
+          min={0}
+          max={1000}
+          value={value.gap}
+          disabled={disabled}
+          onChange={(e) => set({ gap: clampInt(e.target.value, 0, 1000, 0) })}
+        />
+      </label>
+      <label className="checkbox field--inline">
+        <input
+          type="checkbox"
+          checked={value.sameSize}
+          disabled={disabled}
+          onChange={(e) => set({ sameSize: e.target.checked })}
+        />
+        {t("settings.stitch.sameSize")}
       </label>
     </>
   );

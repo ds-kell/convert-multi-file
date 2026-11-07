@@ -16,6 +16,40 @@ pub struct ConvertOptions {
     pub web: WebOptions,
     /// Settings for Word/Excel/PowerPoint documents.
     pub office: OfficeOptions,
+    /// Settings for joining several images into one picture.
+    pub stitch: StitchOptions,
+}
+
+/// How [`crate::merge`] lays out images joined into one picture.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StitchOptions {
+    /// Stack the images top-to-bottom or left-to-right.
+    pub direction: StitchDirection,
+    /// Empty space between images, in pixels.
+    pub gap: u32,
+    /// Shrink the images to a common width (vertical) or height
+    /// (horizontal) so the edges line up. Images are never enlarged.
+    pub same_size: bool,
+}
+
+impl Default for StitchOptions {
+    fn default() -> Self {
+        Self {
+            direction: StitchDirection::Vertical,
+            gap: 0,
+            same_size: true,
+        }
+    }
+}
+
+/// Direction in which images are joined.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum StitchDirection {
+    /// One below the other (e.g. screenshots of a long page).
+    #[default]
+    Vertical,
+    /// Side by side.
+    Horizontal,
 }
 
 /// Settings for office documents.

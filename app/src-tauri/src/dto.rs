@@ -8,7 +8,8 @@ use std::path::PathBuf;
 
 use convertapp_core::{
     Category, ConvertOptions, DocumentOptions, Format, HtmlOptions, HtmlTheme, ImageOptions,
-    OfficeEngine, OfficeOptions, PaperSize, PdfPageSize, Resize, WebOptions,
+    OfficeEngine, OfficeOptions, PaperSize, PdfPageSize, Resize, StitchDirection, StitchOptions,
+    WebOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -82,6 +83,9 @@ pub struct Inspection {
     pub files: Vec<FileInfo>,
     /// Targets every recognised file can be converted to.
     pub targets: Vec<FormatInfo>,
+    /// Formats all files can be merged into, as one output (see
+    /// [`convertapp_core::merge_targets`]).
+    pub merge_targets: Vec<FormatInfo>,
     /// Targets that would be possible after installing a missing tool.
     pub locked: Vec<LockedInfo>,
 }
@@ -187,6 +191,48 @@ impl From<Paper> for PaperSize {
     }
 }
 
+/// Image stacking direction, spelled as in the UI.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Direction {
+    /// One below the other.
+    #[default]
+    Vertical,
+    /// Side by side.
+    Horizontal,
+}
+
+impl From<Direction> for StitchDirection {
+    fn from(direction: Direction) -> Self {
+        match direction {
+            Direction::Vertical => StitchDirection::Vertical,
+            Direction::Horizontal => StitchDirection::Horizontal,
+        }
+    }
+}
+
+/// How images are joined into one picture, as chosen in the UI.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct StitchSetting {
+    /// Stacking direction.
+    pub direction: Direction,
+    /// Pixels between images.
+    pub gap: u32,
+    /// Shrink images to a common width/height.
+    pub same_size: bool,
+}
+
+impl Default for StitchSetting {
+    fn default() -> Self {
+        Self {
+            direction: Direction::Vertical,
+            gap: 0,
+            same_size: true,
+        }
+    }
+}
+
 /// Office suite choice, spelled as in the UI.
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -263,8 +309,10 @@ pub struct Settings {
     pub resize: ResizeSetting,
     /// Page size for images → PDF.
     pub pdf_page: PdfPage,
-    /// With target PDF: put all images into one document.
-    pub merge_pdf: bool,
+    /// Join all files into one output (PDF or picture) instead of one output per file.
+    pub merge: bool,
+    /// Layout when joining images into one picture.
+    pub stitch: StitchSetting,
     /// Theme for Markdown → HTML.
     pub theme: Theme,
     /// Word file whose styles are applied to generated .docx files.
@@ -284,7 +332,8 @@ impl Default for Settings {
             webp_lossless: false,
             resize: ResizeSetting::Original,
             pdf_page: PdfPage::A4,
-            merge_pdf: false,
+            merge: false,
+            stitch: StitchSetting::default(),
             theme: Theme::Auto,
             reference_docx: None,
             web: WebSetting::default(),
@@ -322,6 +371,11 @@ impl Settings {
             web: self.web.into(),
             office: OfficeOptions {
                 engine: self.office_engine.into(),
+            },
+            stitch: StitchOptions {
+                direction: self.stitch.direction.into(),
+                gap: self.stitch.gap.min(10_000),
+                same_size: self.stitch.same_size,
             },
         }
     }
