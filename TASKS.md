@@ -259,6 +259,18 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ---
 
+## Đa ngôn ngữ (English / Tiếng Việt) ✅
+
+- [x] Bộ i18n nhỏ tự viết, có kiểu chặt: thiếu bản dịch = lỗi biên dịch; tham số `{name}`; số nhiều tiếng Anh
+- [x] Chọn ngôn ngữ trên header; mặc định theo Windows; nhớ lựa chọn
+- [x] Toàn bộ giao diện (cửa sổ chính, cửa sổ chuyển nhanh, hộp thoại chọn file) qua `t()`
+- [x] Backend trả mã lỗi thay vì câu tiếng Việt cứng
+- [x] Tiêu đề menu chuột phải theo ngôn ngữ; `--register` theo ngôn ngữ Windows
+- [x] Kiểm tra trên app thật cả 2 ngôn ngữ (CDP + ảnh chụp)
+- [ ] Lỗi kỹ thuật từ công cụ ngoài vẫn tiếng Anh (có chủ đích); CLI vẫn tiếng Anh
+
+---
+
 ## Backlog (chưa xếp phase)
 - [ ] pptx/pdf → png từng trang (cần pipeline 1 vào → nhiều ra; PowerPoint có sẵn `Export` từng slide, PDF thì dùng `pdfium-render`)
 - [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở

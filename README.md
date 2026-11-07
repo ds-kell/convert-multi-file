@@ -25,6 +25,13 @@ cargo tauri build    # tạo bộ cài NSIS trong target/release/bundle/nsis
 Kéo-thả file vào cửa sổ (hoặc bấm "Chọn file…"), chọn định dạng đích, bấm **Chuyển đổi**.
 Chọn nhiều file khác định dạng thì chỉ hiện các định dạng mà tất cả đều chuyển được; file nào đã đúng định dạng đích sẽ được bỏ qua.
 
+## Ngôn ngữ (English / Tiếng Việt)
+
+- Chọn ở góc trên bên phải app. Lần đầu mở, app theo ngôn ngữ của Windows; lựa chọn được nhớ cho lần sau (cả cửa sổ chuyển nhanh).
+- Tiêu đề menu chuột phải đổi theo: "Convert to" / "Chuyển sang". `--register` (dùng bởi bộ cài) lấy theo ngôn ngữ Windows.
+- Thông báo lỗi kỹ thuật từ công cụ ngoài (Pandoc, LibreOffice, trình duyệt…) giữ nguyên tiếng Anh như công cụ báo, để dễ tra cứu.
+- Thêm ngôn ngữ: tạo `app/src/i18n/<mã>.ts` theo mẫu `vi.ts` (TypeScript báo lỗi nếu thiếu khóa nào), rồi thêm vào `LANGUAGES` trong `app/src/i18n/index.tsx`.
+
 ## Menu chuột phải trong Explorer
 
 Bật/tắt bằng ô **Menu chuột phải** ở góc trên app, hoặc bằng dòng lệnh:
