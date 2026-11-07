@@ -1,0 +1,26 @@
+[workspace]
+resolver = "3"
+members = ["crates/core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["truyen.nt"]
+publish = false
+
+# Shared dependency versions: member crates use `dep.workspace = true`
+# so every crate builds against the same version.
+[workspace.dependencies]
+convertapp-core = { path = "crates/core" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

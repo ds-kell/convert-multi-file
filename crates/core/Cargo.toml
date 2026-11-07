@@ -1,0 +1,16 @@
+[package]
+name = "convertapp-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "bmp", "gif", "tiff", "ico"] }
+infer = "0.22.0"
+tempfile = "3.27.0"
+thiserror = "2.0.21"
+tracing = "0.1.44"
+
+[lints]
+workspace = true
