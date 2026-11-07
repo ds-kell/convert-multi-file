@@ -32,6 +32,9 @@ pub struct Tool {
     /// Folders to search after `PATH`, as `(environment variable, sub-path)`
     /// pairs, e.g. `("LOCALAPPDATA", "Pandoc")`.
     pub known_dirs: &'static [(&'static str, &'static str)],
+    /// Windows `App Paths` registry entry written by the installer (e.g.
+    /// `soffice.exe`), checked last. Finds programs installed to custom folders.
+    pub app_path: Option<&'static str>,
     /// How to install it, shown when it is missing.
     pub install_hint: &'static str,
 }
@@ -42,7 +45,22 @@ pub const PANDOC: Tool = Tool {
     program: "pandoc",
     env_override: "CONVERTAPP_PANDOC",
     known_dirs: &[("LOCALAPPDATA", "Pandoc"), ("ProgramFiles", "Pandoc")],
+    app_path: None,
     install_hint: "winget install JohnMacFarlane.Pandoc",
+};
+
+/// [LibreOffice](https://www.libreoffice.org): office suite used headless
+/// to convert Word/Excel/PowerPoint and OpenDocument files.
+pub const LIBREOFFICE: Tool = Tool {
+    name: "LibreOffice",
+    program: "soffice",
+    env_override: "CONVERTAPP_SOFFICE",
+    known_dirs: &[
+        ("ProgramFiles", r"LibreOffice\program"),
+        ("ProgramFiles(x86)", r"LibreOffice\program"),
+    ],
+    app_path: Some("soffice.exe"),
+    install_hint: "winget install TheDocumentFoundation.LibreOffice",
 };
 
 /// [Typst](https://typst.app): typesetting engine Pandoc uses to make PDFs.
@@ -51,6 +69,7 @@ pub const TYPST: Tool = Tool {
     program: "typst",
     env_override: "CONVERTAPP_TYPST",
     known_dirs: &[("LOCALAPPDATA", r"Microsoft\WinGet\Links")],
+    app_path: None,
     install_hint: "winget install Typst.Typst",
 };
 
@@ -76,6 +95,7 @@ impl Tool {
             .chain(known_dirs)
             .map(|dir| dir.join(&file_name))
             .find(|candidate| candidate.is_file())
+            .or_else(|| self.app_path.and_then(registered_app_path))
     }
 
     /// [`Availability::Available`] if the tool can be found, otherwise a
@@ -103,6 +123,32 @@ impl Tool {
             self.name, self.install_hint
         )
     }
+}
+
+/// Looks up `exe` (e.g. `soffice.exe`) under the Windows "App Paths"
+/// registry key, where installers record custom install locations.
+#[cfg(windows)]
+fn registered_app_path(exe: &str) -> Option<PathBuf> {
+    use winreg::RegKey;
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+
+    [HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER]
+        .into_iter()
+        .filter_map(|hive| {
+            RegKey::predef(hive)
+                .open_subkey(format!(
+                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{exe}"
+                ))
+                .and_then(|key| key.get_value::<String, _>(""))
+                .ok()
+        })
+        .map(PathBuf::from)
+        .find(|path| path.is_file())
+}
+
+#[cfg(not(windows))]
+fn registered_app_path(_exe: &str) -> Option<PathBuf> {
+    None
 }
 
 /// `pandoc` → `pandoc.exe` on Windows.
@@ -168,8 +214,7 @@ where
         match child.try_wait() {
             Ok(Some(status)) => break status,
             Ok(None) if Instant::now() >= deadline => {
-                let _ = child.kill();
-                let _ = child.wait();
+                kill_tree(&mut child);
                 return Err(failure(format!(
                     "did not finish within {} seconds",
                     timeout.as_secs()
@@ -196,7 +241,22 @@ where
     }
 }
 
-/// Prevents a console window from flashing up for command (Windows only).
+/// Kills `child` and every process it started. Launchers such as
+/// `soffice.com` hand the work to a child process (`soffice.bin`) that would
+/// otherwise keep running and keep our stderr pipe open.
+fn kill_tree(child: &mut std::process::Child) {
+    #[cfg(windows)]
+    {
+        let mut taskkill = Command::new("taskkill");
+        taskkill.args(["/T", "/F", "/PID", &child.id().to_string()]);
+        hide_console_window(&mut taskkill);
+        let _ = taskkill.output();
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
+/// Prevents a console window from flashing up for `command` (Windows only).
 #[cfg(windows)]
 pub(crate) fn hide_console_window(command: &mut Command) {
     use std::os::windows::process::CommandExt;
@@ -217,6 +277,7 @@ mod tests {
         program: "definitely-not-installed-convertapp",
         env_override: "CONVERTAPP_TEST_NOPE",
         known_dirs: &[],
+        app_path: None,
         install_hint: "install nope",
     };
 

@@ -3,10 +3,10 @@
 use std::collections::BTreeSet;
 
 use crate::converters::{
-    HtmlToMarkdownConverter, ImageConverter, MarkdownConverter, MarkdownToPdfConverter,
-    PandocConverter, SvgConverter, WebConverter,
+    HtmlToMarkdownConverter, ImageConverter, LibreOfficeConverter, MarkdownConverter,
+    MarkdownToPdfConverter, MsOfficeConverter, PandocConverter, SvgConverter, WebConverter,
 };
-use crate::{ConvertError, Converter, Format, Result};
+use crate::{ConvertError, ConvertOptions, Converter, Format, Result};
 
 /// A conversion target that exists but cannot be used right now.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,7 +43,13 @@ impl Registry {
             // just Edge/Chrome; Pandoc + Typst remain the fallback.
             .register(WebConverter)
             .register(PandocConverter)
-            .register(MarkdownToPdfConverter);
+            .register(MarkdownToPdfConverter)
+            // Office documents: Microsoft Office first (identical to Save As
+            // in Word/Excel/PowerPoint), LibreOffice as the free fallback.
+            .register(MsOfficeConverter::word())
+            .register(MsOfficeConverter::excel())
+            .register(MsOfficeConverter::powerpoint())
+            .register(LibreOfficeConverter);
         registry
     }
 
@@ -148,9 +154,26 @@ impl Registry {
     /// - [`ConvertError::Unavailable`] if converters exist but none can run;
     ///   the first one's reason is reported.
     pub fn find(&self, from: Format, to: Format) -> Result<&dyn Converter> {
+        self.find_for(from, to, &ConvertOptions::default())
+    }
+
+    /// Like [`find`](Self::find), but skips converters the user disabled in
+    /// `options` (see [`Converter::is_enabled`]).
+    ///
+    /// # Errors
+    /// See [`find`](Self::find).
+    pub fn find_for(
+        &self,
+        from: Format,
+        to: Format,
+        options: &ConvertOptions,
+    ) -> Result<&dyn Converter> {
         let mut first_unavailable = None;
 
-        for converter in self.converters().filter(|c| c.supports(from, to)) {
+        let candidates = self
+            .converters()
+            .filter(|c| c.supports(from, to) && c.is_enabled(options));
+        for converter in candidates {
             match converter.availability() {
                 crate::Availability::Available => return Ok(converter),
                 crate::Availability::Unavailable { reason } => {

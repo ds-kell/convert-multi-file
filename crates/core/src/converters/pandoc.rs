@@ -23,6 +23,8 @@ const TIMEOUT: Duration = Duration::from_secs(180);
 /// - Word → Markdown saves embedded pictures into a `<name>_files` folder
 ///   next to the output and links to them.
 /// - Word → HTML produces a single self-contained page (pictures embedded).
+/// - Word/OpenDocument → plain text keeps tables readable (Pandoc lays them
+///   out as text grids).
 /// - Generated Word files can take their styles from a reference document
 ///   ([`crate::DocumentOptions::reference_docx`]).
 #[derive(Debug, Default, Clone, Copy)]
@@ -34,13 +36,13 @@ impl Converter for PandocConverter {
     }
 
     fn inputs(&self) -> &[Format] {
-        &[Format::Markdown, Format::Html, Format::Docx]
+        &[Format::Markdown, Format::Html, Format::Docx, Format::Odt]
     }
 
     fn outputs(&self, input: Format) -> Vec<Format> {
         match input {
             Format::Markdown | Format::Html => vec![Format::Docx],
-            Format::Docx => vec![Format::Markdown, Format::Html],
+            Format::Docx | Format::Odt => vec![Format::Markdown, Format::Html, Format::Txt],
             _ => Vec::new(),
         }
     }
@@ -134,6 +136,8 @@ fn pandoc_format(format: Format) -> &'static str {
         Format::Markdown => "gfm",
         Format::Html => "html",
         Format::Docx => "docx",
+        Format::Odt => "odt",
+        Format::Txt => "plain",
         other => unreachable!("{other} is not handled by Pandoc converters"),
     }
 }
@@ -172,6 +176,10 @@ fn document_args(request: &Request<'_>) -> Result<Vec<OsString>> {
             // also what the Markdown links will contain.
             let media = media_dir(&input, output_dir(request.output));
             args.push(join("--extract-media=", Path::new(&media)));
+            args.push("--wrap=none".into());
+        }
+        Format::Txt => {
+            // One line per paragraph, like "Save as plain text" in Word.
             args.push("--wrap=none".into());
         }
         Format::Html => {

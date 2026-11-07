@@ -37,10 +37,32 @@ pub enum Format {
     Ico,
     /// Scalable Vector Graphics (input only: rendered to pixels).
     Svg,
-    /// Portable Document Format (output only: from images, or Markdown via Pandoc).
+    /// Portable Document Format (output only).
     Pdf,
-    /// Microsoft Word document (via Pandoc).
+    /// Microsoft Word document.
     Docx,
+    /// Word 97–2003 document.
+    Doc,
+    /// OpenDocument text (LibreOffice Writer).
+    Odt,
+    /// Rich Text Format.
+    Rtf,
+    /// Plain text (output only, UTF-8).
+    Txt,
+    /// Microsoft Excel workbook.
+    Xlsx,
+    /// Excel 97–2003 workbook.
+    Xls,
+    /// OpenDocument spreadsheet (LibreOffice Calc).
+    Ods,
+    /// Comma-separated values (first sheet only when exporting).
+    Csv,
+    /// Microsoft PowerPoint presentation.
+    Pptx,
+    /// PowerPoint 97–2003 presentation.
+    Ppt,
+    /// OpenDocument presentation (LibreOffice Impress).
+    Odp,
     /// Markdown (CommonMark + GitHub extensions).
     Markdown,
     /// HTML web page.
@@ -61,6 +83,17 @@ impl Format {
         Format::Svg,
         Format::Pdf,
         Format::Docx,
+        Format::Doc,
+        Format::Odt,
+        Format::Rtf,
+        Format::Txt,
+        Format::Xlsx,
+        Format::Xls,
+        Format::Ods,
+        Format::Csv,
+        Format::Pptx,
+        Format::Ppt,
+        Format::Odp,
         Format::Markdown,
         Format::Html,
     ];
@@ -79,6 +112,17 @@ impl Format {
             Format::Svg => &["svg", "svgz"],
             Format::Pdf => &["pdf"],
             Format::Docx => &["docx"],
+            Format::Doc => &["doc"],
+            Format::Odt => &["odt"],
+            Format::Rtf => &["rtf"],
+            Format::Txt => &["txt"],
+            Format::Xlsx => &["xlsx"],
+            Format::Xls => &["xls"],
+            Format::Ods => &["ods"],
+            Format::Csv => &["csv"],
+            Format::Pptx => &["pptx"],
+            Format::Ppt => &["ppt"],
+            Format::Odp => &["odp"],
             Format::Markdown => &["md", "markdown", "mdown", "mkd"],
             Format::Html => &["html", "htm", "xhtml"],
         }
@@ -102,6 +146,17 @@ impl Format {
             Format::Svg => "SVG",
             Format::Pdf => "PDF",
             Format::Docx => "Word",
+            Format::Doc => "Word 97-2003",
+            Format::Odt => "OpenDocument Text",
+            Format::Rtf => "RTF",
+            Format::Txt => "Text",
+            Format::Xlsx => "Excel",
+            Format::Xls => "Excel 97-2003",
+            Format::Ods => "OpenDocument Spreadsheet",
+            Format::Csv => "CSV",
+            Format::Pptx => "PowerPoint",
+            Format::Ppt => "PowerPoint 97-2003",
+            Format::Odp => "OpenDocument Presentation",
             Format::Markdown => "Markdown",
             Format::Html => "HTML",
         }
@@ -118,7 +173,21 @@ impl Format {
             | Format::Tiff
             | Format::Ico
             | Format::Svg => Category::Image,
-            Format::Pdf | Format::Docx | Format::Markdown | Format::Html => Category::Document,
+            Format::Pdf
+            | Format::Docx
+            | Format::Doc
+            | Format::Odt
+            | Format::Rtf
+            | Format::Txt
+            | Format::Xlsx
+            | Format::Xls
+            | Format::Ods
+            | Format::Csv
+            | Format::Pptx
+            | Format::Ppt
+            | Format::Odp
+            | Format::Markdown
+            | Format::Html => Category::Document,
         }
     }
 
@@ -126,7 +195,30 @@ impl Format {
     /// bytes" (a README often starts with `<p align="center">`, which looks
     /// like HTML; an SVG is XML), so detection trusts their extension instead.
     pub fn is_text(self) -> bool {
-        matches!(self, Format::Markdown | Format::Html | Format::Svg)
+        matches!(
+            self,
+            Format::Markdown | Format::Html | Format::Svg | Format::Txt | Format::Csv
+        )
+    }
+
+    /// `true` for office documents. Sniffing cannot always tell them apart
+    /// (all 97–2003 files share one container format, all OOXML/ODF files
+    /// are ZIP archives), so when content and extension both say "office",
+    /// the more specific extension wins.
+    pub fn is_office(self) -> bool {
+        matches!(
+            self,
+            Format::Docx
+                | Format::Doc
+                | Format::Odt
+                | Format::Rtf
+                | Format::Xlsx
+                | Format::Xls
+                | Format::Ods
+                | Format::Pptx
+                | Format::Ppt
+                | Format::Odp
+        )
     }
 
     /// Looks up a format by file extension. Case-insensitive; a leading dot is
@@ -163,6 +255,13 @@ impl Format {
             infer::get_from_path(path)?.and_then(|kind| Self::from_extension(kind.extension()));
 
         if let Some(ext) = by_extension.filter(|f| f.is_text()) {
+            return Ok(Some(ext));
+        }
+        // e.g. an .xls sniffed as "doc": same container, trust the extension.
+        if let (Some(content), Some(ext)) = (by_content, by_extension)
+            && content.is_office()
+            && ext.is_office()
+        {
             return Ok(Some(ext));
         }
 

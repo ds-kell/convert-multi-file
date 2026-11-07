@@ -3,7 +3,9 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use convertapp_core::{Format, HtmlTheme, ImageOptions, PaperSize, PdfPageSize, Resize};
+use convertapp_core::{
+    Format, HtmlTheme, ImageOptions, OfficeEngine, PaperSize, PdfPageSize, Resize,
+};
 
 /// Convert files between formats (images, documents, …).
 #[derive(Debug, Parser)]
@@ -99,6 +101,10 @@ pub struct ConvertArgs {
     #[arg(long)]
     pub no_background: bool,
 
+    /// Office suite for Word/Excel/PowerPoint files.
+    #[arg(long, value_enum, default_value_t = Engine::Auto)]
+    pub office: Engine,
+
     /// Window width in pixels for HTML/Markdown → PNG screenshots.
     #[arg(long, value_name = "PX", default_value_t = 1280, value_parser = clap::value_parser!(u32).range(320..=4096))]
     pub width: u32,
@@ -118,6 +124,27 @@ impl ConvertArgs {
                 max_width,
                 max_height,
             },
+        }
+    }
+}
+
+/// CLI spelling of [`OfficeEngine`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Engine {
+    /// Microsoft Office if installed, otherwise LibreOffice.
+    Auto,
+    /// Only Microsoft Office.
+    Microsoft,
+    /// Only LibreOffice.
+    Libreoffice,
+}
+
+impl From<Engine> for OfficeEngine {
+    fn from(engine: Engine) -> Self {
+        match engine {
+            Engine::Auto => OfficeEngine::Auto,
+            Engine::Microsoft => OfficeEngine::MicrosoftOffice,
+            Engine::Libreoffice => OfficeEngine::LibreOffice,
         }
     }
 }

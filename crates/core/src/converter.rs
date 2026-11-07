@@ -67,6 +67,13 @@ pub trait Converter: Send + Sync + fmt::Debug {
         Availability::Available
     }
 
+    /// Whether the user's settings allow this converter, e.g. "use only
+    /// LibreOffice" disables the Microsoft Office converters. Disabled
+    /// converters are skipped when choosing who converts a file.
+    fn is_enabled(&self, _options: &ConvertOptions) -> bool {
+        true
+    }
+
     /// Performs the conversion described by `request`.
     ///
     /// Implementations should call `progress.set` with increasing values when

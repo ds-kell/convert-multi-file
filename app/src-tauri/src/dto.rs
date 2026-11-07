@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use convertapp_core::{
     Category, ConvertOptions, DocumentOptions, Format, HtmlOptions, HtmlTheme, ImageOptions,
-    PaperSize, PdfPageSize, Resize, WebOptions,
+    OfficeEngine, OfficeOptions, PaperSize, PdfPageSize, Resize, WebOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -167,6 +167,29 @@ impl From<Paper> for PaperSize {
     }
 }
 
+/// Office suite choice, spelled as in the UI.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Engine {
+    /// Microsoft Office if installed, else LibreOffice.
+    #[default]
+    Auto,
+    /// Only Microsoft Office.
+    Microsoft,
+    /// Only LibreOffice.
+    Libreoffice,
+}
+
+impl From<Engine> for OfficeEngine {
+    fn from(engine: Engine) -> Self {
+        match engine {
+            Engine::Auto => OfficeEngine::Auto,
+            Engine::Microsoft => OfficeEngine::MicrosoftOffice,
+            Engine::Libreoffice => OfficeEngine::LibreOffice,
+        }
+    }
+}
+
 /// Page setup for HTML/Markdown → PDF/PNG, as chosen in the UI.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -228,6 +251,8 @@ pub struct Settings {
     pub reference_docx: Option<PathBuf>,
     /// Page setup for web pages → PDF/PNG.
     pub web: WebSetting,
+    /// Office suite for Word/Excel/PowerPoint files.
+    pub office_engine: Engine,
     /// Output folder; `None` = next to each input file.
     pub output_dir: Option<PathBuf>,
 }
@@ -243,6 +268,7 @@ impl Default for Settings {
             theme: Theme::Auto,
             reference_docx: None,
             web: WebSetting::default(),
+            office_engine: Engine::Auto,
             output_dir: None,
         }
     }
@@ -274,6 +300,9 @@ impl Settings {
                 reference_docx: self.reference_docx.clone(),
             },
             web: self.web.into(),
+            office: OfficeOptions {
+                engine: self.office_engine.into(),
+            },
         }
     }
 }

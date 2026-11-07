@@ -14,6 +14,27 @@ pub struct ConvertOptions {
     pub document: DocumentOptions,
     /// Settings for rendering web pages (HTML/Markdown → PDF/PNG).
     pub web: WebOptions,
+    /// Settings for Word/Excel/PowerPoint documents.
+    pub office: OfficeOptions,
+}
+
+/// Settings for office documents.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct OfficeOptions {
+    /// Which office suite converts the documents.
+    pub engine: OfficeEngine,
+}
+
+/// The office suite used for Word/Excel/PowerPoint conversions.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum OfficeEngine {
+    /// Microsoft Office if installed (best fidelity), otherwise LibreOffice.
+    #[default]
+    Auto,
+    /// Only Microsoft Office.
+    MicrosoftOffice,
+    /// Only LibreOffice.
+    LibreOffice,
 }
 
 /// Page setup used when a browser renders HTML or Markdown.

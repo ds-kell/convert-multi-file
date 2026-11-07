@@ -35,7 +35,7 @@ pub fn convert(registry: &Registry, job: &Job, progress: &dyn Progress) -> Resul
         });
     }
 
-    let converter = registry.find(input_format, job.target)?;
+    let converter = registry.find_for(input_format, job.target, &job.options)?;
     tracing::debug!(
         input = %input.display(),
         from = %input_format,
