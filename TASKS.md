@@ -291,6 +291,16 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ---
 
+## PDF → Word ✅
+
+- [x] Word: pdf → docx/odt/rtf/txt (PDF Reflow); LibreOffice dự phòng: pdf → docx/odt
+- [x] Tắt hộp thoại "Word will now convert your PDF" bằng tùy chọn `DisableConvertPdfWarning` **tạm thời**, luôn khôi phục (kể cả khi script bị dừng)
+- [x] Office luôn mở bản sao ở đường dẫn riêng (tránh hộp thoại "lần trước file này gây lỗi nghiêm trọng")
+- [x] Test với PDF thật (bảng + tiếng Việt) bằng cả 2 engine; kiểm tra tùy chọn Word không đổi
+- [ ] PDF scan → cần OCR (Tesseract), để sau
+
+---
+
 ## Backlog (chưa xếp phase)
 - ~~pptx/pdf → png từng trang~~: **bỏ**. Nguyên tắc của app: n file vào → n file ra, không tách 1 file thành nhiều file
 - [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở
