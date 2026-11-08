@@ -233,6 +233,68 @@ fn damaged_documents_fail_cleanly() {
     }
 }
 
+/// Reads Word's `DisableConvertPdfWarning` option (None when absent), to
+/// check the conversion leaves it exactly as it found it.
+#[cfg(windows)]
+fn word_pdf_warning_option() -> Option<String> {
+    let output = Command::new("reg")
+        .args([
+            "query",
+            r"HKCU\Software\Microsoft\Office\16.0\Word\Options",
+            "/v",
+            "DisableConvertPdfWarning",
+        ])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+#[test]
+fn pdf_becomes_an_editable_word_document() {
+    if convertapp_core::browser::locate().is_none() {
+        eprintln!("skipped: a browser is needed to create the test PDF");
+        return;
+    }
+    for engine in engines(Format::Pdf, Format::Docx) {
+        let dir = workspace(engine);
+        // A real text PDF, printed by the browser from HTML.
+        let html = dir.path().join("report.html");
+        fs::write(
+            &html,
+            "<!doctype html><meta charset='utf-8'><h1>Báo cáo quý</h1>\
+             <p>Doanh thu tăng: ầ ẩ ỡ ự Đ đ.</p>\
+             <table border='1'><tr><th>Hạng mục</th><th>Số lượng</th></tr>\
+             <tr><td>Tài liệu</td><td>3</td></tr></table>",
+        )
+        .unwrap();
+        let pdf = run(&html, Format::Pdf, engine);
+        fs::remove_file(&html).unwrap();
+
+        #[cfg(windows)]
+        let option_before = word_pdf_warning_option();
+
+        let docx = run(&pdf, Format::Docx, engine);
+        let text = zip_text(&docx, "word/document.xml");
+        assert!(text.contains("Báo cáo quý"), "{engine:?}: {text}");
+        assert!(text.contains("ầ ẩ ỡ ự Đ đ"), "{engine:?}: Vietnamese kept");
+        assert!(text.contains("Tài liệu"), "{engine:?}: table text kept");
+
+        if engine == OfficeEngine::MicrosoftOffice {
+            let txt = fs::read_to_string(run(&pdf, Format::Txt, engine)).unwrap();
+            assert!(txt.contains("Doanh thu"), "{txt}");
+            #[cfg(windows)]
+            assert_eq!(
+                word_pdf_warning_option(),
+                option_before,
+                "Word's PDF warning option must be restored"
+            );
+        }
+    }
+}
+
 #[test]
 fn engine_choice_is_respected() {
     let registry = Registry::with_defaults();

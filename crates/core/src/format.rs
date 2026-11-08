@@ -37,7 +37,7 @@ pub enum Format {
     Ico,
     /// Scalable Vector Graphics (input only: rendered to pixels).
     Svg,
-    /// Portable Document Format (output only).
+    /// Portable Document Format (to Word/text via an office suite, or merged).
     Pdf,
     /// Microsoft Word document.
     Docx,

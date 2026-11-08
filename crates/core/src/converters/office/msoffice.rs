@@ -112,7 +112,8 @@ pub struct MsOfficeConverter {
 }
 
 impl MsOfficeConverter {
-    /// Word: docx/doc/odt/rtf → pdf, docx, odt, rtf, txt.
+    /// Word: docx/doc/odt/rtf → pdf, docx, odt, rtf, txt; pdf → docx, odt,
+    /// rtf, txt (editable text rebuilt from the PDF).
     pub fn word() -> Self {
         Self { app: App::Word }
     }
@@ -140,12 +141,19 @@ impl Converter for MsOfficeConverter {
     }
 
     fn inputs(&self) -> &[Format] {
-        self.app.kind().inputs()
+        match self.app {
+            // Word also opens PDFs (its "PDF Reflow" rebuilds editable text).
+            App::Word => WORD_INPUTS,
+            app => app.kind().inputs(),
+        }
     }
 
     fn outputs(&self, input: Format) -> Vec<Format> {
         if !self.inputs().contains(&input) {
             return Vec::new();
+        }
+        if input == Format::Pdf {
+            return PDF_TO_TEXT_OUTPUTS.to_vec();
         }
         outputs_for(input)
     }
@@ -171,15 +179,24 @@ impl Converter for MsOfficeConverter {
                 to: request.target,
             })?;
         let powershell = POWERSHELL.require()?;
-        let source = absolute(request.input)?;
         let target = absolute(request.output)?;
         let work_dir = target.parent().unwrap_or(Path::new(".")).to_path_buf();
 
-        // The script and the PID file live in a private temp folder.
+        // The script, its state files and a copy of the input live in a
+        // private temp folder.
         let scratch = tempfile::Builder::new()
             .prefix("convertapp-office-")
             .tempdir()
             .map_err(|e| ConvertError::io(std::env::temp_dir(), e))?;
+        // Office opens a copy at a path it has never seen: if a run ever has
+        // to be killed, Office remembers that path as "caused a serious
+        // error" and would block every later run on the same file with a
+        // dialog nobody can answer.
+        let source = scratch
+            .path()
+            .join("source")
+            .with_extension(request.input_format.extension());
+        fs::copy(request.input, &source).map_err(|e| ConvertError::io(request.input, e))?;
         let script = scratch.path().join("office.ps1");
         // UTF-8 with BOM so Windows PowerShell 5 reads non-ASCII text correctly.
         fs::write(&script, format!("\u{FEFF}{SCRIPT}"))
@@ -209,13 +226,65 @@ impl Converter for MsOfficeConverter {
         progress.set(0.1);
         let result = tools::run(&POWERSHELL, &powershell, args, &work_dir, TIMEOUT);
         if result.is_err() {
-            // The script normally closes Office itself; after a timeout or a
-            // crash, make sure no invisible Office process is left behind.
+            // The script normally cleans up itself; after a timeout or a
+            // crash, make sure no invisible Office process is left behind and
+            // the user's Word options are as they were.
             kill_started_office(&pid_file);
+            restore_pdf_warning(&scratch.path().join("pdf-warning.txt"));
         }
         result
     }
 }
+
+/// Word: its own formats plus PDF.
+const WORD_INPUTS: &[Format] = &[
+    Format::Docx,
+    Format::Doc,
+    Format::Odt,
+    Format::Rtf,
+    Format::Pdf,
+];
+
+/// What Word can turn a PDF into.
+const PDF_TO_TEXT_OUTPUTS: &[Format] = &[Format::Docx, Format::Odt, Format::Rtf, Format::Txt];
+
+/// Restores Word's `DisableConvertPdfWarning` option from the state file the
+/// script writes before changing it (first line: registry key, second line:
+/// old value or `absent`). Only needed when the script could not do it.
+#[cfg(windows)]
+fn restore_pdf_warning(state_file: &Path) {
+    use winreg::RegKey;
+    use winreg::enums::{HKEY_CURRENT_USER, KEY_SET_VALUE};
+
+    let Ok(state) = fs::read_to_string(state_file) else {
+        return; // not a PDF run, or the script already restored it
+    };
+    let mut lines = state.lines();
+    let (Some(key), Some(previous)) = (lines.next(), lines.next()) else {
+        return;
+    };
+    let Some(subkey) = key.trim().strip_prefix(r"HKCU:\") else {
+        return;
+    };
+    let Ok(options) =
+        RegKey::predef(HKEY_CURRENT_USER).open_subkey_with_flags(subkey, KEY_SET_VALUE)
+    else {
+        return;
+    };
+    let restored = match previous.trim() {
+        "absent" => options.delete_value("DisableConvertPdfWarning"),
+        value => match value.parse::<u32>() {
+            Ok(number) => options.set_value("DisableConvertPdfWarning", &number),
+            Err(_) => return,
+        },
+    };
+    if let Err(err) = restored {
+        tracing::warn!(%err, "could not restore Word's PDF warning option");
+    }
+}
+
+#[cfg(not(windows))]
+fn restore_pdf_warning(_state_file: &Path) {}
 
 /// `true` if the COM class `prog_id` is registered (Office app installed).
 #[cfg(windows)]
@@ -260,16 +329,30 @@ mod tests {
 
     #[test]
     fn every_declared_output_has_a_format_code() {
-        for app in [App::Word, App::Excel, App::PowerPoint] {
-            for &input in app.kind().inputs() {
-                for target in outputs_for(input) {
+        for converter in [
+            MsOfficeConverter::word(),
+            MsOfficeConverter::excel(),
+            MsOfficeConverter::powerpoint(),
+        ] {
+            for &input in converter.inputs() {
+                for target in converter.outputs(input) {
                     assert!(
-                        app.format_code(target).is_some(),
-                        "{app:?}: {input} -> {target} has no Office format code"
+                        converter.app.format_code(target).is_some(),
+                        "{:?}: {input} -> {target} has no Office format code",
+                        converter.app
                     );
                 }
             }
         }
+    }
+
+    #[test]
+    fn word_turns_pdf_into_editable_documents() {
+        let word = MsOfficeConverter::word();
+        assert!(word.supports(Format::Pdf, Format::Docx));
+        assert!(word.supports(Format::Pdf, Format::Txt));
+        assert!(!word.supports(Format::Pdf, Format::Pdf));
+        assert!(!MsOfficeConverter::excel().supports(Format::Pdf, Format::Xlsx));
     }
 
     #[test]

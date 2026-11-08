@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use super::{ALL_INPUTS, allowed, outputs_for};
+use super::{allowed, outputs_for};
 use crate::tools::{self, LIBREOFFICE};
 use crate::{
     Availability, ConvertError, ConvertOptions, Converter, Format, OfficeEngine, Progress, Request,
@@ -33,10 +33,15 @@ impl Converter for LibreOfficeConverter {
     }
 
     fn inputs(&self) -> &[Format] {
-        ALL_INPUTS
+        INPUTS
     }
 
     fn outputs(&self, input: Format) -> Vec<Format> {
+        if input == Format::Pdf {
+            // Imported into Writer as positioned text frames: editable, but
+            // less tidy than Word's result, hence registered after Word.
+            return vec![Format::Docx, Format::Odt];
+        }
         // See the type documentation for why text is excluded.
         outputs_for(input)
             .into_iter()
@@ -82,9 +87,12 @@ impl Converter for LibreOfficeConverter {
             "--nodefault".into(),
             format!("-env:UserInstallation={profile_url}").into(),
         ];
-        if request.input_format == Format::Csv {
+        match request.input_format {
             // Comma separated, double quotes, UTF-8 (76), start at line 1.
-            args.push("--infilter=CSV:44,34,76,1".into());
+            Format::Csv => args.push("--infilter=CSV:44,34,76,1".into()),
+            // Without this, PDFs open in Draw, which cannot save Word files.
+            Format::Pdf => args.push("--infilter=writer_pdf_import".into()),
+            _ => {}
         }
         args.extend([
             "--convert-to".into(),
@@ -117,6 +125,22 @@ impl Converter for LibreOfficeConverter {
         fs::rename(&produced, &output).map_err(|e| ConvertError::io(&output, e))
     }
 }
+
+/// Office formats plus PDF (opened in Writer for PDF → Word).
+const INPUTS: &[Format] = &[
+    Format::Docx,
+    Format::Doc,
+    Format::Odt,
+    Format::Rtf,
+    Format::Xlsx,
+    Format::Xls,
+    Format::Ods,
+    Format::Csv,
+    Format::Pptx,
+    Format::Ppt,
+    Format::Odp,
+    Format::Pdf,
+];
 
 /// On Windows, `soffice.exe` is a GUI launcher that returns before the
 /// conversion finishes; `soffice.com` next to it is the console variant that
@@ -157,7 +181,7 @@ mod tests {
 
     #[test]
     fn every_declared_output_has_a_filter() {
-        for &input in ALL_INPUTS {
+        for &input in INPUTS {
             for target in LibreOfficeConverter.outputs(input) {
                 assert!(export_filter(target).is_some(), "{input} -> {target}");
             }

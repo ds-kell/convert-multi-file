@@ -34,6 +34,9 @@ $ErrorActionPreference = 'Stop'
 # instead of showing a password prompt nobody can answer.
 $NoPassword = 'convertapp-not-the-password'
 
+# Records Word's PDF-warning setting before changing it (see the Word branch).
+$PdfWarningFile = Join-Path ([IO.Path]::GetDirectoryName($PidFile)) 'pdf-warning.txt'
+
 $processName = @{ word = 'WINWORD'; excel = 'EXCEL'; powerpoint = 'POWERPNT' }[$App]
 $before = @(Get-Process $processName -ErrorAction SilentlyContinue | ForEach-Object Id)
 
@@ -69,8 +72,24 @@ try {
 
     switch ($App) {
         'word' {
-            # Open(FileName, ConfirmConversions, ReadOnly, AddToRecentFiles, PasswordDocument)
-            $doc = $office.Documents.Open($Source, $false, $true, $false, $NoPassword)
+            if ([IO.Path]::GetExtension($Source) -ieq '.pdf') {
+                # Opening a PDF shows "Word will now convert your PDF…", a
+                # dialog DisplayAlerts does not suppress. Word's own option
+                # turns it off; set it for this run only and record the old
+                # value so it is restored even if this script is killed.
+                $pdfWarningKey = "HKCU:\Software\Microsoft\Office\$($office.Version)\Word\Options"
+                $previous = (Get-ItemProperty $pdfWarningKey -ErrorAction SilentlyContinue).DisableConvertPdfWarning
+                $previousText = if ($null -eq $previous) { 'absent' } else { "$previous" }
+                Set-Content -LiteralPath $PdfWarningFile -Value @($pdfWarningKey, $previousText)
+                if (-not (Test-Path $pdfWarningKey)) { New-Item $pdfWarningKey -Force | Out-Null }
+                Set-ItemProperty $pdfWarningKey -Name DisableConvertPdfWarning -Value 1 -Type DWord
+                # Open(FileName, ConfirmConversions, ReadOnly, AddToRecentFiles)
+                $doc = $office.Documents.Open($Source, $false, $true, $false)
+            }
+            else {
+                # Open(FileName, ConfirmConversions, ReadOnly, AddToRecentFiles, PasswordDocument)
+                $doc = $office.Documents.Open($Source, $false, $true, $false, $NoPassword)
+            }
             if ($Format -eq 'pdf') {
                 $doc.ExportAsFixedFormat($Target, 17)                 # wdExportFormatPDF
             }
@@ -135,6 +154,18 @@ finally {
     }
     [GC]::Collect()
     [GC]::WaitForPendingFinalizers()
+
+    # Put Word's PDF-warning option back exactly as it was.
+    if (Test-Path -LiteralPath $PdfWarningFile) {
+        $key, $previousText = Get-Content -LiteralPath $PdfWarningFile
+        if ($previousText -eq 'absent') {
+            Remove-ItemProperty $key -Name DisableConvertPdfWarning -ErrorAction SilentlyContinue
+        }
+        else {
+            Set-ItemProperty $key -Name DisableConvertPdfWarning -Value ([int]$previousText) -Type DWord
+        }
+        Remove-Item -LiteralPath $PdfWarningFile
+    }
 }
 
 if ($null -ne $failure) {

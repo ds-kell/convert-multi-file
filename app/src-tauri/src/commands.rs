@@ -287,7 +287,7 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn pdfs_alone_can_only_be_merged() {
+    fn pdfs_can_be_merged_and_converted_when_an_office_suite_exists() {
         let dir = tempfile::tempdir().unwrap();
         let paths: Vec<PathBuf> = ["a.pdf", "b.pdf"]
             .iter()
@@ -297,19 +297,30 @@ mod tests {
                 path
             })
             .collect();
+        let registry = Registry::with_defaults();
+        // PDF → Word needs Microsoft Word or LibreOffice on this machine.
+        let office = !registry.targets_for(Format::Pdf).is_empty();
 
-        let result = inspect(&Registry::with_defaults(), paths.clone());
+        let result = inspect(&registry, paths.clone());
         assert!(
             result.files.iter().all(|f| f.error.is_none()),
-            "merge-only, not errors"
+            "never an error together"
         );
-        assert!(result.targets.is_empty(), "no one-by-one conversion");
         let merge: Vec<_> = result.merge_targets.iter().map(|t| t.id).collect();
         assert_eq!(merge, ["pdf"]);
+        let targets: Vec<_> = result.targets.iter().map(|t| t.id).collect();
+        assert_eq!(targets.contains(&"docx"), office, "{targets:?}");
 
-        // A single PDF has nothing to do.
-        let single = inspect(&Registry::with_defaults(), paths[..1].to_vec());
-        assert_eq!(single.files[0].error, Some(FileIssue::Unsupported));
+        // A single PDF converts to Word if possible, otherwise says why.
+        let single = inspect(&registry, paths[..1].to_vec());
+        if office {
+            assert!(single.files[0].error.is_none());
+        } else {
+            assert!(matches!(
+                single.files[0].error,
+                Some(FileIssue::NeedsTool { .. })
+            ));
+        }
     }
 
     #[test]

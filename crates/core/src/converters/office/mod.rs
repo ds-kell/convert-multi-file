@@ -62,21 +62,6 @@ impl Kind {
     }
 }
 
-/// Every office format that can be opened.
-pub(crate) const ALL_INPUTS: &[Format] = &[
-    Format::Docx,
-    Format::Doc,
-    Format::Odt,
-    Format::Rtf,
-    Format::Xlsx,
-    Format::Xls,
-    Format::Ods,
-    Format::Csv,
-    Format::Pptx,
-    Format::Ppt,
-    Format::Odp,
-];
-
 /// Targets for an office `input` (never the input itself).
 pub(crate) fn outputs_for(input: Format) -> Vec<Format> {
     Kind::of(input)
@@ -111,12 +96,5 @@ mod tests {
         assert!(outputs_for(Format::Doc).contains(&Format::Docx));
         assert!(outputs_for(Format::Ppt).contains(&Format::Pptx));
         assert!(outputs_for(Format::Png).is_empty());
-    }
-
-    #[test]
-    fn every_input_has_a_kind() {
-        for &format in ALL_INPUTS {
-            assert!(Kind::of(format).is_some(), "{format}");
-        }
     }
 }
