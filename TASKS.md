@@ -282,6 +282,15 @@ Chi tiết thiết kế xem [PLAN.md](PLAN.md).
 
 ---
 
+## Thông báo thiếu chương trình ngoài ✅
+
+- [x] Mỗi chương trình ngoài có tên, trang tải chính thức, lệnh cài (nếu có), miễn phí/trả phí
+- [x] Định dạng bị khoá liệt kê các cách mở khoá (cài đủ 1 trong các nhóm), miễn phí trước
+- [x] App: khung thông báo + Tải về (mở trình duyệt, chỉ https) + Sao chép lệnh cài + Kiểm tra lại; EN/VI
+- [x] Kiểm tra lại không cần khởi động lại: các tool được tìm cả ở thư mục cài mặc định và registry App Paths, không chỉ PATH
+
+---
+
 ## Backlog (chưa xếp phase)
 - ~~pptx/pdf → png từng trang~~: **bỏ**. Nguyên tắc của app: n file vào → n file ra, không tách 1 file thành nhiều file
 - [ ] Đường dẫn tool tự đặt trong Settings của app (Pandoc/Typst/LibreOffice/trình duyệt) + lưu settings giữa các lần mở
