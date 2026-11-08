@@ -288,6 +288,26 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 .quick__actions { display: flex; gap: 8px; }
 .quick .button--primary { min-width: 90px; }
 
+/* ---------- Missing external programs ---------- */
+
+.missing-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.missing-tools__title { margin: 0; }
+.missing-tools__group { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.missing-tools__formats { font-weight: 600; color: var(--text); }
+.missing-tools__options { display: flex; flex-direction: column; gap: 4px; }
+.missing-tools__option { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.missing-tools__or { font-style: italic; }
+.missing-tools__requirement strong { color: var(--text); }
+
 /* ---------- Narrow windows ---------- */
 
 @media (max-width: 640px) {

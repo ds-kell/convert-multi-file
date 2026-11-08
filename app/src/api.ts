@@ -5,7 +5,7 @@ import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 import type { Language } from "./i18n";
 import type { ConvertEvent, Inspection, QuickBatch, Settings } from "./types";
@@ -102,4 +102,14 @@ export async function pickFolder(title: string): Promise<string | null> {
 /** Shows `path` selected in Explorer / Finder. */
 export function revealInFolder(path: string): Promise<void> {
   return revealItemInDir(path);
+}
+
+/** Opens an https page (e.g. a download page) in the default browser. */
+export function openInBrowser(url: string): Promise<void> {
+  return openUrl(url);
+}
+
+/** Copies `text` to the clipboard. */
+export function copyText(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text);
 }

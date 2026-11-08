@@ -18,7 +18,7 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::{Availability, ConvertError, Result};
+use crate::{Availability, ConvertError, Requirement, Result};
 
 /// An external program a converter depends on.
 #[derive(Debug, Clone, Copy)]
@@ -35,8 +35,10 @@ pub struct Tool {
     /// Windows `App Paths` registry entry written by the installer (e.g.
     /// `soffice.exe`), checked last. Finds programs installed to custom folders.
     pub app_path: Option<&'static str>,
-    /// How to install it, shown when it is missing.
-    pub install_hint: &'static str,
+    /// Official download page, shown when the tool is missing.
+    pub homepage: &'static str,
+    /// One-line install command, if any (e.g. `winget install …`).
+    pub install_command: Option<&'static str>,
 }
 
 /// [Pandoc](https://pandoc.org): universal document converter.
@@ -46,7 +48,8 @@ pub const PANDOC: Tool = Tool {
     env_override: "CONVERTAPP_PANDOC",
     known_dirs: &[("LOCALAPPDATA", "Pandoc"), ("ProgramFiles", "Pandoc")],
     app_path: None,
-    install_hint: "winget install JohnMacFarlane.Pandoc",
+    homepage: "https://pandoc.org/installing.html",
+    install_command: Some("winget install JohnMacFarlane.Pandoc"),
 };
 
 /// [LibreOffice](https://www.libreoffice.org): office suite used headless
@@ -60,7 +63,8 @@ pub const LIBREOFFICE: Tool = Tool {
         ("ProgramFiles(x86)", r"LibreOffice\program"),
     ],
     app_path: Some("soffice.exe"),
-    install_hint: "winget install TheDocumentFoundation.LibreOffice",
+    homepage: "https://www.libreoffice.org/download/download-libreoffice/",
+    install_command: Some("winget install TheDocumentFoundation.LibreOffice"),
 };
 
 /// [Typst](https://typst.app): typesetting engine Pandoc uses to make PDFs.
@@ -70,7 +74,8 @@ pub const TYPST: Tool = Tool {
     env_override: "CONVERTAPP_TYPST",
     known_dirs: &[("LOCALAPPDATA", r"Microsoft\WinGet\Links")],
     app_path: None,
-    install_hint: "winget install Typst.Typst",
+    homepage: "https://github.com/typst/typst/releases/latest",
+    install_command: Some("winget install Typst.Typst"),
 };
 
 impl Tool {
@@ -98,14 +103,22 @@ impl Tool {
             .or_else(|| self.app_path.and_then(registered_app_path))
     }
 
-    /// [`Availability::Available`] if the tool can be found, otherwise a
-    /// reason that tells the user how to install it.
+    /// What the user must install when this tool is missing.
+    pub fn requirement(&self) -> Requirement {
+        Requirement {
+            name: self.name,
+            url: self.homepage,
+            install_command: self.install_command,
+            free: true,
+        }
+    }
+
+    /// [`Availability::Available`] if the tool can be found, otherwise
+    /// unavailable with this tool as the missing requirement.
     pub fn availability(&self) -> Availability {
         match self.locate() {
             Some(_) => Availability::Available,
-            None => Availability::Unavailable {
-                reason: self.missing_reason(),
-            },
+            None => Availability::missing(vec![self.requirement()]),
         }
     }
 
@@ -118,10 +131,13 @@ impl Tool {
     }
 
     fn missing_reason(&self) -> String {
-        format!(
-            "{} is not installed. Install it with: {}",
-            self.name, self.install_hint
-        )
+        match self.install_command {
+            Some(command) => format!("{} is not installed. Install it with: {command}", self.name),
+            None => format!(
+                "{} is not installed. Download it from {}",
+                self.name, self.homepage
+            ),
+        }
     }
 }
 
@@ -278,14 +294,16 @@ mod tests {
         env_override: "CONVERTAPP_TEST_NOPE",
         known_dirs: &[],
         app_path: None,
-        install_hint: "install nope",
+        homepage: "https://example.com/nope",
+        install_command: Some("install nope"),
     };
 
     #[test]
     fn missing_tool_reports_install_hint() {
         assert!(MISSING.locate().is_none());
         match MISSING.availability() {
-            Availability::Unavailable { reason } => {
+            Availability::Unavailable { reason, missing } => {
+                assert_eq!(missing, [MISSING.requirement()]);
                 assert!(reason.contains("Nope is not installed"));
                 assert!(reason.contains("install nope"));
             }

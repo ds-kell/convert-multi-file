@@ -23,7 +23,7 @@ export interface FileInfo {
 export type FileIssue =
   | { kind: "unknownFormat" }
   | { kind: "unsupported" }
-  | { kind: "needsTool"; reason: string }
+  | { kind: "needsTool"; alternatives: Requirement[][] }
   | { kind: "unreadable"; detail: string };
 
 /** Result of the `inspect_files` command. */
@@ -37,10 +37,22 @@ export interface Inspection {
   locked: LockedTarget[];
 }
 
+/** A program the user can install (mirrors `RequirementInfo` in Rust). */
+export interface Requirement {
+  name: string;
+  /** Official download page. */
+  url: string;
+  /** One-line install command, e.g. `winget install …`. */
+  installCommand: string | null;
+  /** `false` for paid software. */
+  free: boolean;
+}
+
 /** A target shown greyed out, with how to unlock it. */
 export interface LockedTarget {
   format: FormatInfo;
-  reason: string;
+  /** Install all programs of any one inner list. Free options first. */
+  alternatives: Requirement[][];
 }
 
 export type Theme = "auto" | "light" | "dark" | "none";

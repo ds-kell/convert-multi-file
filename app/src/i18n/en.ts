@@ -38,13 +38,21 @@ export const en = {
 
   "issue.unknownFormat": "Unrecognised file format",
   "issue.unsupported": "This format cannot be converted yet",
-  "issue.needsTool": "Needs an extra program: {reason}",
+  "issue.needsTool": "Needs {tools}",
   "issue.unreadable": "Cannot read the file: {detail}",
 
   // ----- Target picker -----
   "targets.label": "Output format",
   "targets.none": "The selected files have no output format in common. Choose files of the same kind (for example only images).",
-  "targets.locked": "Unavailable: {reason}",
+
+  // ----- Missing external programs -----
+  "tools.title": "Some formats need a program that is not installed yet:",
+  "tools.or": "or",
+  "tools.download": "Download",
+  "tools.copy": "Copy install command",
+  "tools.copied": "Copied!",
+  "tools.paid": "paid",
+  "tools.recheck": "Installed? Check again",
 
   // ----- Context menu toggle -----
   "menu.toggle": "Context menu",

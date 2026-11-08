@@ -6,15 +6,19 @@ use crate::converters::{
     HtmlToMarkdownConverter, ImageConverter, LibreOfficeConverter, MarkdownConverter,
     MarkdownToPdfConverter, MsOfficeConverter, PandocConverter, SvgConverter, WebConverter,
 };
-use crate::{ConvertError, ConvertOptions, Converter, Format, Result};
+use crate::{Availability, ConvertError, ConvertOptions, Converter, Format, Requirement, Result};
 
 /// A conversion target that exists but cannot be used right now.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockedTarget {
     /// The target format.
     pub format: Format,
-    /// Why it is unavailable, ideally with how to fix it.
+    /// Why it is unavailable (English), for logs and the CLI.
     pub reason: String,
+    /// Ways to unlock it: installing **all** programs of **any one** inner
+    /// list is enough (e.g. `[[LibreOffice], [Microsoft Office]]`, or
+    /// `[[Edge], [Pandoc, Typst]]`). Free options come first.
+    pub alternatives: Vec<Vec<Requirement>>,
 }
 
 /// Holds every registered [`Converter`] and answers questions such as
@@ -106,9 +110,30 @@ impl Registry {
                     Err(other) => other.to_string(),
                     Ok(_) => String::new(), // cannot happen: not available above
                 };
-                LockedTarget { format, reason }
+                LockedTarget {
+                    format,
+                    reason,
+                    alternatives: self.alternatives(from, format),
+                }
             })
             .collect()
+    }
+
+    /// What each converter able to do `from` → `to` is missing, without
+    /// duplicates, free options first.
+    fn alternatives(&self, from: Format, to: Format) -> Vec<Vec<Requirement>> {
+        let mut alternatives: Vec<Vec<Requirement>> = Vec::new();
+        for converter in self.converters().filter(|c| c.supports(from, to)) {
+            if let Availability::Unavailable { missing, .. } = converter.availability()
+                && !missing.is_empty()
+                && !alternatives.contains(&missing)
+            {
+                alternatives.push(missing);
+            }
+        }
+        // Stable sort keeps the registry's preference among equals.
+        alternatives.sort_by_key(|option| !option.iter().all(|req| req.free));
+        alternatives
     }
 
     /// Targets of `input`, optionally only from available converters.
@@ -175,8 +200,8 @@ impl Registry {
             .filter(|c| c.supports(from, to) && c.is_enabled(options));
         for converter in candidates {
             match converter.availability() {
-                crate::Availability::Available => return Ok(converter),
-                crate::Availability::Unavailable { reason } => {
+                Availability::Available => return Ok(converter),
+                Availability::Unavailable { reason, .. } => {
                     first_unavailable.get_or_insert((converter.id(), reason));
                 }
             }
@@ -192,12 +217,50 @@ impl Registry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Availability, Progress, Request};
+    use crate::{Progress, Request};
+
+    /// What [`Fake`] needs when unavailable.
+    const TOOL: Requirement = Requirement {
+        name: "Tool",
+        url: "https://example.com/tool",
+        install_command: Some("install tool"),
+        free: true,
+    };
+
+    /// A paid alternative, to check that free options are listed first.
+    const PAID: Requirement = Requirement {
+        name: "Paid",
+        url: "https://example.com/paid",
+        install_command: None,
+        free: false,
+    };
 
     /// Fake converter: PNG → JPEG only, with configurable availability.
     #[derive(Debug)]
     struct Fake {
         available: bool,
+    }
+
+    /// Another PNG → JPEG converter that needs a paid program.
+    #[derive(Debug)]
+    struct FakePaid;
+
+    impl Converter for FakePaid {
+        fn id(&self) -> &'static str {
+            "fake-paid"
+        }
+        fn inputs(&self) -> &[Format] {
+            &[Format::Png]
+        }
+        fn outputs(&self, _input: Format) -> Vec<Format> {
+            vec![Format::Jpeg]
+        }
+        fn availability(&self) -> Availability {
+            Availability::missing(vec![PAID])
+        }
+        fn convert(&self, _: &Request<'_>, _: &dyn Progress) -> Result<()> {
+            Ok(())
+        }
     }
 
     impl Converter for Fake {
@@ -218,9 +281,7 @@ mod tests {
             if self.available {
                 Availability::Available
             } else {
-                Availability::Unavailable {
-                    reason: "missing tool".into(),
-                }
+                Availability::missing(vec![TOOL])
             }
         }
         fn convert(&self, _: &Request<'_>, _: &dyn Progress) -> Result<()> {
@@ -229,17 +290,17 @@ mod tests {
     }
 
     #[test]
-    fn locked_targets_list_unavailable_pairs_with_reason() {
+    fn locked_targets_list_what_to_install_free_first() {
         let mut registry = Registry::new();
-        registry.register(Fake { available: false });
+        // The paid converter is registered first but listed last.
+        registry
+            .register(FakePaid)
+            .register(Fake { available: false });
         let locked = registry.locked_targets(&[Format::Png]);
-        assert_eq!(
-            locked,
-            [LockedTarget {
-                format: Format::Jpeg,
-                reason: "missing tool".into()
-            }]
-        );
+        assert_eq!(locked.len(), 1);
+        assert_eq!(locked[0].format, Format::Jpeg);
+        assert_eq!(locked[0].alternatives, [vec![TOOL], vec![PAID]]);
+        assert!(locked[0].reason.contains("Paid is not installed"));
 
         // Once an available converter provides the pair, it is not locked.
         registry.register(Fake { available: true });

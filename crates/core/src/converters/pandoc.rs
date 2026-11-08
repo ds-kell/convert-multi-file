@@ -86,11 +86,8 @@ impl Converter for MarkdownToPdfConverter {
     }
 
     fn availability(&self) -> Availability {
-        // Both programs are needed; report the first one missing.
-        match PANDOC.availability() {
-            Availability::Available => TYPST.availability(),
-            missing => missing,
-        }
+        // Both programs are needed; report every one that is missing.
+        Availability::all([PANDOC.availability(), TYPST.availability()])
     }
 
     fn convert(&self, request: &Request<'_>, progress: &dyn Progress) -> Result<()> {

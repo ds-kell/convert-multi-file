@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use convertapp_core::{
     Category, ConvertOptions, DocumentOptions, Format, HtmlOptions, HtmlTheme, ImageOptions,
-    OfficeEngine, OfficeOptions, PaperSize, PdfPageSize, Resize, StitchDirection, StitchOptions,
-    WebOptions,
+    OfficeEngine, OfficeOptions, PaperSize, PdfPageSize, Requirement, Resize, StitchDirection,
+    StitchOptions, WebOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -68,9 +68,11 @@ pub enum FileIssue {
     UnknownFormat,
     /// Known format, but nothing can convert it.
     Unsupported,
-    /// Convertible after installing a program; `reason` says which (English,
-    /// includes the install command).
-    NeedsTool { reason: String },
+    /// Convertible after installing a program: all programs of any one
+    /// alternative (see [`LockedInfo::alternatives`]).
+    NeedsTool {
+        alternatives: Vec<Vec<RequirementInfo>>,
+    },
     /// The file could not be read; `detail` is the OS error.
     Unreadable { detail: String },
 }
@@ -96,8 +98,42 @@ pub struct Inspection {
 pub struct LockedInfo {
     /// The locked format.
     pub format: FormatInfo,
-    /// Why it is locked and how to unlock it.
-    pub reason: String,
+    /// Ways to unlock it: install all programs of any one inner list.
+    /// Free options first.
+    pub alternatives: Vec<Vec<RequirementInfo>>,
+}
+
+/// A program the user can install, see [`convertapp_core::Requirement`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequirementInfo {
+    /// Product name, e.g. "LibreOffice".
+    pub name: &'static str,
+    /// Official download page.
+    pub url: &'static str,
+    /// One-line install command, if any.
+    pub install_command: Option<&'static str>,
+    /// `false` for paid software.
+    pub free: bool,
+}
+
+impl From<Requirement> for RequirementInfo {
+    fn from(req: Requirement) -> Self {
+        Self {
+            name: req.name,
+            url: req.url,
+            install_command: req.install_command,
+            free: req.free,
+        }
+    }
+}
+
+/// Converts the core's alternatives into DTOs.
+pub fn alternatives_info(alternatives: Vec<Vec<Requirement>>) -> Vec<Vec<RequirementInfo>> {
+    alternatives
+        .into_iter()
+        .map(|option| option.into_iter().map(RequirementInfo::from).collect())
+        .collect()
 }
 
 /// HTML colour theme, spelled as in the UI.

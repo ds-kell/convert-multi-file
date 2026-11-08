@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n";
 import type { FileIssue, FileItem, FileStatus } from "../types";
+import { describeAlternatives } from "./MissingTools";
 
 interface FileListProps {
   files: FileItem[];
@@ -50,7 +51,7 @@ function Issue({ issue }: { issue: FileIssue }) {
       case "unsupported":
         return t("issue.unsupported");
       case "needsTool":
-        return t("issue.needsTool", { reason: issue.reason });
+        return t("issue.needsTool", { tools: describeAlternatives(issue.alternatives, t("tools.or")) });
       case "unreadable":
         return t("issue.unreadable", { detail: issue.detail });
     }

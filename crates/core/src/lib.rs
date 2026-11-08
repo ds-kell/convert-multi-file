@@ -42,7 +42,7 @@ mod registry;
 pub mod text;
 pub mod tools;
 
-pub use converter::{Availability, Converter, Request};
+pub use converter::{Availability, Converter, Request, Requirement};
 pub use error::{BoxError, ConvertError, Result, error_chain};
 pub use format::{Category, Format, ParseFormatError};
 pub use job::Job;

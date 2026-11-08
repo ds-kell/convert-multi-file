@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use crate::Availability;
+use crate::{Availability, Requirement};
 
 /// Environment variable that may point at the browser executable.
 pub const ENV_OVERRIDE: &str = "CONVERTAPP_BROWSER";
@@ -20,18 +20,32 @@ pub fn locate() -> Option<PathBuf> {
     candidates().into_iter().find(|path| path.is_file())
 }
 
-/// [`Availability`] of web rendering, with an explanation when missing.
+/// [`Availability`] of web rendering, with what to install when missing.
 pub fn availability() -> Availability {
     match locate() {
         Some(_) => Availability::Available,
-        None => Availability::Unavailable {
-            reason: format!(
-                "Microsoft Edge or Google Chrome is required to render web pages. \
-                 Install one, or set {ENV_OVERRIDE} to the browser's executable."
-            ),
-        },
+        None => Availability::missing(vec![REQUIREMENT]),
     }
 }
+
+/// The browser suggested when none is found: Edge on Windows (where it is
+/// normally part of the system), Chrome elsewhere. Either one works, and
+/// [`ENV_OVERRIDE`] can point at any Chromium-based browser.
+const REQUIREMENT: Requirement = if cfg!(windows) {
+    Requirement {
+        name: "Microsoft Edge",
+        url: "https://www.microsoft.com/edge/download",
+        install_command: Some("winget install Microsoft.Edge"),
+        free: true,
+    }
+} else {
+    Requirement {
+        name: "Google Chrome",
+        url: "https://www.google.com/chrome/",
+        install_command: None,
+        free: true,
+    }
+};
 
 #[cfg(windows)]
 fn candidates() -> Vec<PathBuf> {

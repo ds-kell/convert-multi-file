@@ -23,6 +23,8 @@ export interface Converter {
   addFiles: (paths: string[]) => Promise<void>;
   removeFile: (path: string) => Promise<void>;
   clear: () => void;
+  /** Inspects the same files again, e.g. after installing a missing program. */
+  refresh: () => Promise<void>;
   convert: (target: string, settings: Settings) => Promise<void>;
 }
 
@@ -85,6 +87,10 @@ export function useConverter(): Converter {
     [inspect],
   );
 
+  const refresh = useCallback(async () => {
+    await inspect(filesRef.current.map((f) => f.path));
+  }, [inspect]);
+
   const clear = useCallback(() => {
     setFiles([]);
     setTargets([]);
@@ -144,5 +150,5 @@ export function useConverter(): Converter {
     }
   }, []);
 
-  return { files, targets, mergeTargets, locked, busy, summary, error, addFiles, removeFile, clear, convert };
+  return { files, targets, mergeTargets, locked, busy, summary, error, addFiles, removeFile, clear, refresh, convert };
 }

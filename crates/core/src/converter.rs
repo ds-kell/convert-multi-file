@@ -5,16 +5,33 @@ use std::path::Path;
 
 use crate::{ConvertOptions, Format, Progress, Result};
 
+/// A program the user has to install for some conversions, with what the UI
+/// needs to help them do it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Requirement {
+    /// Product name, e.g. "Pandoc".
+    pub name: &'static str,
+    /// Official download page, opened in the browser.
+    pub url: &'static str,
+    /// One-line install command, if there is one (e.g. `winget install …`).
+    pub install_command: Option<&'static str>,
+    /// `false` for paid software (Microsoft Office), so the UI can point at
+    /// a free alternative first.
+    pub free: bool,
+}
+
 /// Whether a converter can run on this machine right now.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Availability {
     /// Ready to use.
     Available,
-    /// Cannot run; `reason` tells the user why and ideally how to fix it
-    /// (e.g. "Pandoc is not installed – run `winget install Pandoc`").
+    /// Cannot run until the `missing` programs are installed.
     Unavailable {
-        /// Human-readable explanation.
+        /// Human-readable explanation (English), for logs and the CLI.
         reason: String,
+        /// Programs that must *all* be installed for this converter to work.
+        /// Empty when the problem is not a missing program.
+        missing: Vec<Requirement>,
     },
 }
 
@@ -22,6 +39,37 @@ impl Availability {
     /// `true` for [`Availability::Available`].
     pub fn is_available(&self) -> bool {
         matches!(self, Self::Available)
+    }
+
+    /// Unavailable because `missing` programs are not installed; the reason
+    /// lists them with how to get them.
+    pub fn missing(missing: Vec<Requirement>) -> Self {
+        let reason = missing
+            .iter()
+            .map(|req| match req.install_command {
+                Some(command) => format!("{} is not installed (install: {command})", req.name),
+                None => format!("{} is not installed ({})", req.name, req.url),
+            })
+            .collect::<Vec<_>>()
+            .join("; ");
+        Self::Unavailable { reason, missing }
+    }
+
+    /// Combines the availability of several independent parts: available
+    /// only if all are; otherwise lists everything that is missing.
+    pub fn all(parts: impl IntoIterator<Item = Availability>) -> Self {
+        let missing: Vec<Requirement> = parts
+            .into_iter()
+            .flat_map(|part| match part {
+                Availability::Available => Vec::new(),
+                Availability::Unavailable { missing, .. } => missing,
+            })
+            .collect();
+        if missing.is_empty() {
+            Availability::Available
+        } else {
+            Availability::missing(missing)
+        }
     }
 }
 

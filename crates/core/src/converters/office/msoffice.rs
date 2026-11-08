@@ -14,7 +14,7 @@ use super::{Kind, allowed, outputs_for};
 use crate::tools::{self, Tool};
 use crate::{
     Availability, ConvertError, ConvertOptions, Converter, Format, OfficeEngine, Progress, Request,
-    Result,
+    Requirement, Result,
 };
 
 /// The automation script, embedded in the binary.
@@ -31,7 +31,17 @@ const POWERSHELL: Tool = Tool {
     env_override: "CONVERTAPP_POWERSHELL",
     known_dirs: &[("SystemRoot", r"System32\WindowsPowerShell\v1.0")],
     app_path: None,
-    install_hint: "Windows PowerShell is part of Windows",
+    homepage: "https://learn.microsoft.com/powershell/",
+    install_command: None,
+};
+
+/// Shown when Word/Excel/PowerPoint is missing. Paid, so the UI lists the
+/// free LibreOffice alternative first.
+const MICROSOFT_OFFICE: Requirement = Requirement {
+    name: "Microsoft Office",
+    url: "https://www.microsoft.com/microsoft-365",
+    install_command: None,
+    free: false,
 };
 
 /// One Office conversion at a time: PowerPoint is a single shared instance,
@@ -144,16 +154,7 @@ impl Converter for MsOfficeConverter {
         if is_installed(self.app.prog_id()) && POWERSHELL.locate().is_some() {
             Availability::Available
         } else {
-            Availability::Unavailable {
-                reason: format!(
-                    "Microsoft {} is not installed",
-                    match self.app {
-                        App::Word => "Word",
-                        App::Excel => "Excel",
-                        App::PowerPoint => "PowerPoint",
-                    }
-                ),
-            }
+            Availability::missing(vec![MICROSOFT_OFFICE])
         }
     }
 

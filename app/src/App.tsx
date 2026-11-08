@@ -101,6 +101,7 @@ export default function App() {
               selected={target}
               disabled={busy}
               onSelect={setTarget}
+              onRecheck={() => void converter.refresh()}
             />
             {offered.length > 0 && (
               <SettingsPanel

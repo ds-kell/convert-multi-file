@@ -7,7 +7,10 @@ use convertapp_core::{ConvertOptions, Format, Job, Registry, convert, error_chai
 use tauri::State;
 use tauri::ipc::Channel;
 
-use crate::dto::{ConvertEvent, FileInfo, FileIssue, FormatInfo, Inspection, LockedInfo, Settings};
+use crate::dto::{
+    ConvertEvent, FileInfo, FileIssue, FormatInfo, Inspection, LockedInfo, Settings,
+    alternatives_info,
+};
 
 /// Shared application state, registered with `Builder::manage`.
 #[derive(Debug)]
@@ -97,7 +100,7 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
                     // Say *why*: a missing tool is fixable, unsupported is not.
                     let issue = match registry.locked_targets(&[format]).into_iter().next() {
                         Some(locked) => FileIssue::NeedsTool {
-                            reason: locked.reason,
+                            alternatives: alternatives_info(locked.alternatives),
                         },
                         None => FileIssue::Unsupported,
                     };
@@ -132,7 +135,7 @@ fn inspect(registry: &Registry, paths: Vec<PathBuf>) -> Inspection {
         .into_iter()
         .map(|locked| LockedInfo {
             format: locked.format.into(),
-            reason: locked.reason,
+            alternatives: alternatives_info(locked.alternatives),
         })
         .collect();
 
@@ -296,7 +299,10 @@ mod tests {
             .collect();
 
         let result = inspect(&Registry::with_defaults(), paths.clone());
-        assert!(result.files.iter().all(|f| f.error.is_none()), "merge-only, not errors");
+        assert!(
+            result.files.iter().all(|f| f.error.is_none()),
+            "merge-only, not errors"
+        );
         assert!(result.targets.is_empty(), "no one-by-one conversion");
         let merge: Vec<_> = result.merge_targets.iter().map(|t| t.id).collect();
         assert_eq!(merge, ["pdf"]);

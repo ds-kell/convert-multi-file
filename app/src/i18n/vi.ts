@@ -34,13 +34,21 @@ export const vi: Messages = {
 
   "issue.unknownFormat": "Không nhận diện được định dạng",
   "issue.unsupported": "Chưa hỗ trợ chuyển đổi định dạng này",
-  "issue.needsTool": "Cần cài thêm chương trình: {reason}",
+  "issue.needsTool": "Cần cài thêm {tools}",
   "issue.unreadable": "Không đọc được file: {detail}",
 
   // ----- Target picker -----
   "targets.label": "Định dạng đầu ra",
   "targets.none": "Các file đã chọn không có định dạng đích chung. Hãy chọn các file cùng loại (ví dụ toàn ảnh).",
-  "targets.locked": "Chưa dùng được: {reason}",
+
+  // ----- Missing external programs -----
+  "tools.title": "Một số định dạng cần cài thêm chương trình:",
+  "tools.or": "hoặc",
+  "tools.download": "Tải về",
+  "tools.copy": "Sao chép lệnh cài",
+  "tools.copied": "Đã sao chép!",
+  "tools.paid": "trả phí",
+  "tools.recheck": "Cài xong? Kiểm tra lại",
 
   // ----- Context menu toggle -----
   "menu.toggle": "Menu chuột phải",

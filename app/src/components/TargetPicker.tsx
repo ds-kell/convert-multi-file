@@ -1,4 +1,5 @@
 import { useI18n } from "../i18n";
+import { MissingTools } from "./MissingTools";
 import type { FormatInfo, LockedTarget } from "../types";
 
 interface TargetPickerProps {
@@ -8,19 +9,17 @@ interface TargetPickerProps {
   selected: string | null;
   disabled: boolean;
   onSelect: (id: string) => void;
+  /** Re-inspects the files after the user installed a missing program. */
+  onRecheck: () => void;
 }
 
 /** Segmented buttons for choosing the output format. */
-export function TargetPicker({ targets, locked, selected, disabled, onSelect }: TargetPickerProps) {
+export function TargetPicker({ targets, locked, selected, disabled, onSelect, onRecheck }: TargetPickerProps) {
   const { t } = useI18n();
 
   if (targets.length === 0 && locked.length === 0) {
     return <p className="hint">{t("targets.none")}</p>;
   }
-
-  // One line per distinct reason, e.g. "Pandoc is not installed…". Reasons
-  // come from the engine in English, with the exact install command.
-  const reasons = [...new Set(locked.map((l) => l.reason))];
 
   return (
     <>
@@ -39,17 +38,13 @@ export function TargetPicker({ targets, locked, selected, disabled, onSelect }: 
             {target.id.toUpperCase()}
           </button>
         ))}
-        {locked.map(({ format, reason }) => (
-          <button key={format.id} type="button" className="chip chip--locked" disabled title={reason}>
+        {locked.map(({ format }) => (
+          <button key={format.id} type="button" className="chip chip--locked" disabled>
             🔒 {format.id.toUpperCase()}
           </button>
         ))}
       </div>
-      {reasons.map((reason) => (
-        <p key={reason} className="hint">
-          {t("targets.locked", { reason })}
-        </p>
-      ))}
+      <MissingTools locked={locked} busy={disabled} onRecheck={onRecheck} />
     </>
   );
 }

@@ -1,13 +1,17 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the app windows: core APIs, the file pickers, revealing converted files in Explorer and closing the quick-convert window.",
+  "description": "Permissions for the app windows: core APIs, the file pickers, revealing converted files in Explorer, opening download pages of missing programs (https only) and closing the quick-convert window.",
   "windows": ["main", "quick"],
   "permissions": [
     "core:default",
     "core:window:allow-close",
     "core:window:allow-set-title",
     "dialog:allow-open",
-    "opener:allow-reveal-item-in-dir"
+    "opener:allow-reveal-item-in-dir",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }]
+    }
   ]
 }
