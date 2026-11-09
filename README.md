@@ -2,6 +2,7 @@
 
 App desktop chuyển đổi file (ảnh, Markdown, HTML, Office), dùng được bằng chuột phải trong Explorer hoặc mở app như bình thường.
 Viết bằng Rust + Tauri v2. Kế hoạch tổng thể xem [PLAN.md](PLAN.md), tiến độ xem [TASKS.md](TASKS.md).
+Mới đọc code (nhất là chưa quen Rust)? Xem [docs/GIAI-THICH-CODE.md](docs/GIAI-THICH-CODE.md): luồng chạy, bản đồ file và các cú pháp Rust dùng trong dự án.
 
 ## Cấu trúc
 
@@ -113,13 +114,24 @@ Mã thoát: `0` thành công, `1` có file lỗi (các file khác vẫn được
 | pptx, ppt, odp | pdf, pptx, odp ⁴ |
 | pdf | docx, odt, rtf, txt (Word); docx, odt (LibreOffice, bố cục kém hơn) ⁴ ⁵ |
 
-¹ Cần [Pandoc](https://pandoc.org): `winget install JohnMacFarlane.Pandoc`.
-² Cần thêm [Typst](https://typst.app): `winget install Typst.Typst`. Chỉ dùng khi máy không có Edge/Chrome (xem ³).
-⁴ Cần **Microsoft Office** (ưu tiên, giống hệt "Save As") hoặc [LibreOffice](https://www.libreoffice.org) (`winget install TheDocumentFoundation.LibreOffice`, miễn phí). Chọn bằng `--office auto|microsoft|libreoffice` hoặc ô "Bộ Office" trong app. Xuất CSV lấy sheet đầu tiên. LibreOffice ở chỗ lạ: `CONVERTAPP_SOFFICE`.
+¹ Cần [Pandoc](https://pandoc.org).
+² Cần thêm [Typst](https://typst.app). Chỉ dùng khi máy không có Edge/Chrome (xem ³).
+⁴ Cần **Microsoft Office** (ưu tiên, giống hệt "Save As") hoặc [LibreOffice](https://www.libreoffice.org) (miễn phí). Microsoft Office chỉ dùng được trên Windows; macOS/Linux dùng LibreOffice. Chọn bằng `--office auto|microsoft|libreoffice` hoặc ô "Bộ Office" trong app. Xuất CSV lấy sheet đầu tiên. LibreOffice ở chỗ lạ: `CONVERTAPP_SOFFICE`.
 ⁵ PDF có chữ mới ra văn bản sửa được; PDF scan (chỉ là ảnh) cần OCR, chưa hỗ trợ. PDF nhiều cột/tạp chí có thể lệch bố cục. Khi chuyển bằng Word, app tạm bật tùy chọn "không hỏi khi mở PDF" của Word rồi trả lại đúng như cũ.
 ³ Dùng Microsoft Edge (có sẵn trên Windows) hoặc Google Chrome chạy ẩn. Tùy chọn: `--paper a4|a3|a5|letter|legal`, `--landscape`, `--margin <mm>`, `--no-background`, `--width <px>` (cho PNG). Trình duyệt ở chỗ lạ: đặt `CONVERTAPP_BROWSER`.
-Thiếu chương trình thì app hiện định dạng đó với biểu tượng 🔒 và một khung thông báo: cần cài gì (có lựa chọn miễn phí thì xếp trước), nút **Tải về** mở trang chính thức, nút **Sao chép lệnh cài** (`winget …`), và nút **Kiểm tra lại** sau khi cài — không cần khởi động lại app. `convertapp-cli formats <file>` cũng in ra lý do.
+Thiếu chương trình thì app hiện định dạng đó với biểu tượng 🔒 và một khung thông báo: cần cài gì (có lựa chọn miễn phí thì xếp trước), nút **Tải về** mở trang chính thức, nút **Sao chép lệnh cài** (đúng hệ điều hành đang chạy, xem bảng dưới), và nút **Kiểm tra lại** sau khi cài — không cần khởi động lại app. `convertapp-cli formats <file>` cũng in ra lý do.
 Nếu tool cài ở chỗ lạ, chỉ đường dẫn bằng biến môi trường `CONVERTAPP_PANDOC` / `CONVERTAPP_TYPST`.
+
+Lệnh cài app gợi ý theo hệ điều hành (Linux: theo trình quản lý gói tìm thấy trên máy; không có lệnh thì chỉ hiện nút **Tải về**):
+
+| | Windows | macOS (Homebrew) | Debian/Ubuntu | Fedora | Arch | openSUSE |
+|---|---|---|---|---|---|---|
+| Pandoc | `winget install JohnMacFarlane.Pandoc` | `brew install pandoc` | `sudo apt install pandoc` | `sudo dnf install pandoc` | `sudo pacman -S pandoc` | `sudo zypper install pandoc` |
+| Typst | `winget install Typst.Typst` | `brew install typst` | — | `sudo dnf install typst` | `sudo pacman -S typst` | `sudo zypper install typst` |
+| LibreOffice | `winget install TheDocumentFoundation.LibreOffice` | `brew install --cask libreoffice` | `sudo apt install libreoffice` | `sudo dnf install libreoffice` | `sudo pacman -S libreoffice-fresh` | `sudo zypper install libreoffice` |
+| Trình duyệt | `winget install Microsoft.Edge` | `brew install --cask google-chrome` | — | — | — | — |
+
+Ngoài `PATH`, app còn tự tìm ở các thư mục cài quen thuộc của từng hệ điều hành — quan trọng trên macOS, vì app mở từ Finder/Dock không thấy `/opt/homebrew/bin`: `/opt/homebrew/bin`, `/usr/local/bin`, `/Applications/LibreOffice.app` và `~/Applications/…` (macOS); `/usr/bin`, `/usr/local/bin`, `/snap/bin`, `/usr/lib/libreoffice/program` (Linux); `~/.cargo/bin`, `~/.local/bin` (cả hai).
 Dùng `--reference-doc mau.docx` (hoặc nút "File Word mẫu" trong app) để file Word theo font/kiểu tiêu đề/lề của file mẫu.
 
 Tùy chọn ảnh (CLI / app):
