@@ -181,14 +181,13 @@ fn no_browser_processes_are_left_behind() {
         return;
     };
     let (_dir, html) = tall_page();
-    let exe = browser::locate().unwrap();
-    let exe_name = exe.file_name().unwrap().to_string_lossy().into_owned();
-
     run(&html, Format::Png, WebOptions::default());
 
     // Any headless instance we started used a profile named convertapp-browser-*.
     #[cfg(windows)]
     {
+        let exe = browser::locate().unwrap();
+        let exe_name = exe.file_name().unwrap().to_string_lossy().into_owned();
         let output = std::process::Command::new("powershell")
             .args([
                 "-NoProfile",

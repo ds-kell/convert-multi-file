@@ -313,3 +313,18 @@ fn engine_choice_is_respected() {
         assert_eq!(converter.id(), "ms-word");
     }
 }
+
+#[test]
+fn microsoft_office_is_only_suggested_on_windows() {
+    let registry = Registry::with_defaults();
+    let suggested: Vec<&str> = registry
+        .locked_targets(&[Format::Docx])
+        .iter()
+        .flat_map(|locked| locked.alternatives.iter().flatten())
+        .map(|req| req.name)
+        .collect();
+    // Office for Mac / Linux has no COM automation to drive.
+    if !cfg!(windows) {
+        assert!(!suggested.contains(&"Microsoft Office"), "{suggested:?}");
+    }
+}

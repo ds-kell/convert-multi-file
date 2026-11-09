@@ -47,13 +47,18 @@ impl Registry {
             // just Edge/Chrome; Pandoc + Typst remain the fallback.
             .register(WebConverter)
             .register(PandocConverter)
-            .register(MarkdownToPdfConverter)
-            // Office documents: Microsoft Office first (identical to Save As
-            // in Word/Excel/PowerPoint), LibreOffice as the free fallback.
-            .register(MsOfficeConverter::word())
-            .register(MsOfficeConverter::excel())
-            .register(MsOfficeConverter::powerpoint())
-            .register(LibreOfficeConverter);
+            .register(MarkdownToPdfConverter);
+        // Office documents: Microsoft Office first (identical to Save As in
+        // Word/Excel/PowerPoint), LibreOffice as the free fallback. Office is
+        // driven through COM, which only exists on Windows; elsewhere it is
+        // left out so missing-program hints point at LibreOffice alone.
+        if cfg!(windows) {
+            registry
+                .register(MsOfficeConverter::word())
+                .register(MsOfficeConverter::excel())
+                .register(MsOfficeConverter::powerpoint());
+        }
+        registry.register(LibreOfficeConverter);
         registry
     }
 

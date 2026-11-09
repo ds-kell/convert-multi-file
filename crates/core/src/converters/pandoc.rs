@@ -281,6 +281,15 @@ mod tests {
         }
     }
 
+    /// An absolute path on this OS: `C:\docs\a` on Windows, `/docs/a` elsewhere.
+    fn abs(path: &str) -> PathBuf {
+        if cfg!(windows) {
+            PathBuf::from(format!("C:{}", path.replace('/', "\\")))
+        } else {
+            PathBuf::from(path)
+        }
+    }
+
     fn strings(args: &[OsString]) -> Vec<String> {
         args.iter()
             .map(|a| a.to_string_lossy().into_owned())
@@ -291,15 +300,15 @@ mod tests {
     fn markdown_to_docx_uses_gfm_and_reference_doc() {
         let options = ConvertOptions {
             document: DocumentOptions {
-                reference_docx: Some(PathBuf::from(r"C:\styles\company.docx")),
+                reference_docx: Some(abs("/styles/company.docx")),
             },
             ..ConvertOptions::default()
         };
         let args = strings(
             &document_args(&request(
-                Path::new(r"C:\docs\notes.md"),
+                &abs("/docs/notes.md"),
                 Format::Markdown,
-                Path::new(r"C:\docs\.tmp.docx"),
+                &abs("/docs/.tmp.docx"),
                 Format::Docx,
                 &options,
             ))
@@ -307,8 +316,11 @@ mod tests {
         );
         assert!(args.windows(2).any(|w| w == ["--from", "gfm"]));
         assert!(args.windows(2).any(|w| w == ["--to", "docx"]));
-        assert!(args.contains(&r"--resource-path=C:\docs".to_owned()));
-        assert!(args.contains(&r"--reference-doc=C:\styles\company.docx".to_owned()));
+        assert!(args.contains(&format!("--resource-path={}", abs("/docs").display())));
+        assert!(args.contains(&format!(
+            "--reference-doc={}",
+            abs("/styles/company.docx").display()
+        )));
     }
 
     #[test]
@@ -316,9 +328,9 @@ mod tests {
         let options = ConvertOptions::default();
         let args = strings(
             &document_args(&request(
-                Path::new(r"C:\docs\report.docx"),
+                &abs("/docs/report.docx"),
                 Format::Docx,
-                Path::new(r"C:\out\.tmp.html"),
+                &abs("/out/.tmp.html"),
                 Format::Html,
                 &options,
             ))

@@ -42,7 +42,7 @@ export interface Requirement {
   name: string;
   /** Official download page. */
   url: string;
-  /** One-line install command, e.g. `winget install …`. */
+  /** One-line install command for the current OS (`winget …`, `brew …`, `sudo apt …`). */
   installCommand: string | null;
   /** `false` for paid software. */
   free: boolean;

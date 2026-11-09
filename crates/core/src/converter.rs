@@ -13,7 +13,8 @@ pub struct Requirement {
     pub name: &'static str,
     /// Official download page, opened in the browser.
     pub url: &'static str,
-    /// One-line install command, if there is one (e.g. `winget install …`).
+    /// One-line install command for the current operating system, if there
+    /// is one (e.g. `winget install …`, `brew install …`, `sudo apt install …`).
     pub install_command: Option<&'static str>,
     /// `false` for paid software (Microsoft Office), so the UI can point at
     /// a free alternative first.

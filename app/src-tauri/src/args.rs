@@ -89,9 +89,18 @@ where
 mod tests {
     use super::*;
 
+    /// An absolute path on this OS: `C:\docs\a` on Windows, `/docs/a` elsewhere.
+    fn abs(path: &str) -> PathBuf {
+        if cfg!(windows) {
+            PathBuf::from(format!("C:{}", path.replace('/', "\\")))
+        } else {
+            PathBuf::from(path)
+        }
+    }
+
     fn parse_ok(args: &[&str]) -> Launch {
         let argv = std::iter::once("ConvertApp.exe").chain(args.iter().copied());
-        parse(argv, Path::new(r"C:\work")).unwrap()
+        parse(argv, &abs("/work")).unwrap()
     }
 
     #[test]
@@ -101,15 +110,13 @@ mod tests {
 
     #[test]
     fn to_with_files_is_a_quick_request_with_absolute_paths() {
-        let launch = parse_ok(&["--to", "jpg", "a.png", r"D:\pics\b.png"]);
+        let elsewhere = abs("/pics/b.png");
+        let launch = parse_ok(&["--to", "jpg", "a.png", elsewhere.to_str().unwrap()]);
         assert_eq!(
             launch,
             Launch::Quick(QuickRequest {
                 target: Format::Jpeg,
-                files: vec![
-                    PathBuf::from(r"C:\work\a.png"),
-                    PathBuf::from(r"D:\pics\b.png")
-                ],
+                files: vec![abs("/work/a.png"), elsewhere],
             })
         );
     }
