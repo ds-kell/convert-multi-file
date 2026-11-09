@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { contextMenuEnabled, insideTauri, setContextMenu } from "../api";
 import { useI18n } from "../i18n";
 
+const onWindows = navigator.userAgent.includes("Windows");
+
 /**
  * Checkbox that adds/removes "Convert to" in the Explorer context menu.
  * Reads the real registry state on mount, so it reflects changes made by the
@@ -16,7 +18,7 @@ export function ContextMenuToggle() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!insideTauri) return;
+    if (!insideTauri || !onWindows) return;
     contextMenuEnabled()
       .then(setEnabled)
       .catch((e) => setError(String(e)));
@@ -42,6 +44,9 @@ export function ContextMenuToggle() {
     if (enabled) void apply(true);
     // Runs on language changes only: `apply` and `enabled` are read as they are at that moment.
   }, [language]);
+
+  // The menu is an Explorer (registry) integration; macOS and Linux have none yet.
+  if (!onWindows) return null;
 
   return (
     <label className="checkbox" title={error ?? t("menu.tooltip")}>

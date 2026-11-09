@@ -1,4 +1,18 @@
-# ConvertApp
+# ConvertApp — free offline file converter (Windows, macOS, Linux)
+
+Convert images (PNG, JPG, WebP, GIF, BMP, TIFF, ICO, SVG), PDF, Markdown, HTML, Word, Excel and PowerPoint **offline**, many files at once. On Windows, just right-click files → **Convert to ▸**.
+
+[![Download](https://img.shields.io/github/v/release/ds-kell/convert-multi-file?label=Download&logo=github)](../../releases/latest)
+
+| OS | File to download |
+|---|---|
+| Windows 10/11 | `ConvertApp_<version>_x64-setup.exe` |
+| macOS (Apple Silicon / Intel) | `ConvertApp_<version>_aarch64.dmg` / `ConvertApp_<version>_x64.dmg` |
+| Linux | `.deb` (Debian/Ubuntu) or `.AppImage` (any distro) |
+
+Unsigned builds: on Windows click *More info → Run anyway*; on macOS right-click the app → *Open* (or `xattr -cr /Applications/ConvertApp.app`). Word/PDF conversions need free tools (Pandoc, LibreOffice); the app tells you exactly what to install.
+
+---
 
 App desktop chuyển đổi file (ảnh, Markdown, HTML, Office), dùng được bằng chuột phải trong Explorer hoặc mở app như bình thường.
 Viết bằng Rust + Tauri v2. Kế hoạch tổng thể xem [PLAN.md](PLAN.md), tiến độ xem [TASKS.md](TASKS.md).
@@ -156,3 +170,12 @@ Ghi chú:
 2. Thêm định dạng mới (nếu có) vào enum `Format` trong `format.rs`.
 3. Đăng ký trong `Registry::with_defaults()`.
 4. Viết test trong `crates/core/tests/`.
+
+## ☕ Support / Ủng hộ
+
+Free and open source. If it saved you time, you can buy me a coffee — thank you!
+
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal&logoColor=white)](https://paypal.me/truyennt)
+[![VietQR](https://img.shields.io/badge/VietQR-Chuy%E1%BB%83n%20kho%E1%BA%A3n-E31837)](https://github.com/ds-kell/ds-kell/blob/main/DONATE.md)
+
+<img src="https://raw.githubusercontent.com/ds-kell/ds-kell/main/assets/donate-vietqr.jpg" alt="VietQR VietinBank" width="180">
