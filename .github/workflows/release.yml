@@ -1,6 +1,6 @@
 name: Release
 # Push a tag like v0.1.0 to build installers for Windows, macOS and Linux
-# and attach them to a draft GitHub Release (publish it after checking).
+# and attach them to a GitHub Release.
 on:
   push:
     tags: ['v*']
@@ -47,7 +47,7 @@ jobs:
           args: ${{ matrix.args }}
           tagName: ${{ github.ref_name }}
           releaseName: ConvertApp ${{ github.ref_name }}
-          releaseDraft: true
+          releaseDraft: false
           releaseBody: |
             **Windows:** run `ConvertApp_*_x64-setup.exe`. SmartScreen may warn because the app is not code-signed: click *More info → Run anyway*.
             **macOS:** open the `.dmg` (`aarch64` = Apple Silicon, `x64` = Intel). The app is not notarized: right-click → *Open*, or run `xattr -cr /Applications/ConvertApp.app`.
