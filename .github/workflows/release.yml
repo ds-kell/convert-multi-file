@@ -42,6 +42,8 @@ jobs:
       - run: cargo test --workspace
         if: matrix.rust_target != 'x86_64-apple-darwin'
       - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
           args: ${{ matrix.args }}
