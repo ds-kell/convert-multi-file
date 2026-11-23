@@ -192,11 +192,14 @@ fn registry_offers_word_targets_only_when_pandoc_is_installed() {
         );
     } else {
         assert!(!md_targets.contains(&Format::Docx));
+        // The hint is the install command of this OS (winget, brew, apt…),
+        // or the download page where there is none.
+        let hint = PANDOC.install.for_this_os().unwrap_or(PANDOC.homepage);
         let locked = registry.locked_targets(&[Format::Markdown]);
         assert!(
             locked
                 .iter()
-                .any(|l| l.format == Format::Docx && l.reason.contains("winget"))
+                .any(|l| l.format == Format::Docx && l.reason.contains(hint))
         );
     }
 }

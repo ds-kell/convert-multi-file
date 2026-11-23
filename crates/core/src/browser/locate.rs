@@ -24,28 +24,33 @@ pub fn locate() -> Option<PathBuf> {
 pub fn availability() -> Availability {
     match locate() {
         Some(_) => Availability::Available,
-        None => Availability::missing(vec![REQUIREMENT]),
+        None => Availability::missing(vec![requirement()]),
     }
 }
 
 /// The browser suggested when none is found: Edge on Windows (where it is
 /// normally part of the system), Chrome elsewhere. Either one works, and
 /// [`ENV_OVERRIDE`] can point at any Chromium-based browser.
-const REQUIREMENT: Requirement = if cfg!(windows) {
-    Requirement {
-        name: "Microsoft Edge",
-        url: "https://www.microsoft.com/edge/download",
-        install_command: Some("winget install Microsoft.Edge"),
-        free: true,
+fn requirement() -> Requirement {
+    if cfg!(windows) {
+        Requirement {
+            name: "Microsoft Edge",
+            url: "https://www.microsoft.com/edge/download",
+            install_command: Some("winget install Microsoft.Edge"),
+            free: true,
+        }
+    } else {
+        Requirement {
+            name: "Google Chrome",
+            url: "https://www.google.com/chrome/",
+            // Linux distributions do not package Chrome; the download page
+            // offers the right .deb/.rpm.
+            install_command: cfg!(target_os = "macos")
+                .then_some("brew install --cask google-chrome"),
+            free: true,
+        }
     }
-} else {
-    Requirement {
-        name: "Google Chrome",
-        url: "https://www.google.com/chrome/",
-        install_command: None,
-        free: true,
-    }
-};
+}
 
 #[cfg(windows)]
 fn candidates() -> Vec<PathBuf> {
@@ -87,14 +92,19 @@ fn candidates() -> Vec<PathBuf> {
 
 #[cfg(target_os = "macos")]
 fn candidates() -> Vec<PathBuf> {
-    [
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-        "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    ]
-    .into_iter()
-    .map(PathBuf::from)
-    .collect()
+    const BUNDLES: [&str; 3] = [
+        "Google Chrome.app/Contents/MacOS/Google Chrome",
+        "Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "Chromium.app/Contents/MacOS/Chromium",
+    ];
+    // System-wide /Applications first, then the user's own ~/Applications.
+    let roots: Vec<PathBuf> = std::iter::once(PathBuf::from("/Applications"))
+        .chain(std::env::var_os("HOME").map(|home| PathBuf::from(home).join("Applications")))
+        .collect();
+    roots
+        .iter()
+        .flat_map(|root| BUNDLES.into_iter().map(move |bundle| root.join(bundle)))
+        .collect()
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
@@ -106,9 +116,21 @@ fn candidates() -> Vec<PathBuf> {
         "chromium-browser",
         "microsoft-edge",
     ];
-    let dirs: Vec<PathBuf> = std::env::var_os("PATH")
+    // PATH first, then the usual folders, for desktop launchers started
+    // with a reduced PATH.
+    let mut dirs: Vec<PathBuf> = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
+    dirs.extend(
+        [
+            "/usr/bin",
+            "/usr/local/bin",
+            "/snap/bin",
+            "/opt/google/chrome",
+        ]
+        .into_iter()
+        .map(PathBuf::from),
+    );
     dirs.iter()
         .flat_map(|dir| names.iter().map(move |name| dir.join(name)))
         .collect()

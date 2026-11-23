@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use super::{Kind, allowed, outputs_for};
-use crate::tools::{self, Tool};
+use crate::tools::{self, InstallCommands, Tool};
 use crate::{
     Availability, ConvertError, ConvertOptions, Converter, Format, OfficeEngine, Progress, Request,
     Requirement, Result,
@@ -30,9 +30,10 @@ const POWERSHELL: Tool = Tool {
     program: "powershell",
     env_override: "CONVERTAPP_POWERSHELL",
     known_dirs: &[("SystemRoot", r"System32\WindowsPowerShell\v1.0")],
+    system_dirs: &[],
     app_path: None,
     homepage: "https://learn.microsoft.com/powershell/",
-    install_command: None,
+    install: InstallCommands::NONE,
 };
 
 /// Shown when Word/Excel/PowerPoint is missing. Paid, so the UI lists the
@@ -159,6 +160,14 @@ impl Converter for MsOfficeConverter {
     }
 
     fn availability(&self) -> Availability {
+        if !cfg!(windows) {
+            // Office for Mac has no COM automation: installing it would not
+            // help, so do not suggest it. LibreOffice covers these formats.
+            return Availability::Unavailable {
+                reason: "Microsoft Office automation is only supported on Windows".to_owned(),
+                missing: Vec::new(),
+            };
+        }
         if is_installed(self.app.prog_id()) && POWERSHELL.locate().is_some() {
             Availability::Available
         } else {

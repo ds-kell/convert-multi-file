@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "ConvertApp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.convertapp.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -24,6 +24,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "-"
+    }
   }
 }

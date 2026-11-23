@@ -4,21 +4,37 @@
 //! The program is looked up, in order:
 //! 1. an environment variable override (e.g. `CONVERTAPP_PANDOC=D:\pandoc.exe`),
 //! 2. the `PATH`,
-//! 3. well-known install folders (per-user installers often skip `PATH`, or
-//!    the app was started before `PATH` was updated).
+//! 3. well-known install folders of the current operating system (per-user
+//!    installers often skip `PATH`; on macOS an app started from Finder or the
+//!    Dock gets a minimal `PATH` without Homebrew's `/opt/homebrew/bin`).
 //!
 //! Lookup only touches the file system (no process is started), so it is cheap
 //! enough to repeat whenever the UI asks which formats are available. That
 //! also means a tool installed while the app is running is picked up at once.
+//!
+//! Every platform-dependent value (folders, install commands) is chosen with
+//! `cfg!`, so each build only carries what applies to its operating system.
 
 use std::ffi::OsStr;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::OnceLock;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::{Availability, ConvertError, Requirement, Result};
+
+/// `true` when compiled for macOS.
+const MACOS: bool = cfg!(target_os = "macos");
+
+/// Where Homebrew links programs: Apple Silicon, then Intel Macs (also used
+/// by most `.pkg` installers, e.g. Pandoc's).
+const MACOS_BIN_DIRS: &[&str] = &["/opt/homebrew/bin", "/usr/local/bin"];
+
+/// Program folders on Linux, for desktop launchers started with a reduced
+/// `PATH` (Snap links its commands into `/snap/bin`).
+const LINUX_BIN_DIRS: &[&str] = &["/usr/local/bin", "/usr/bin", "/snap/bin"];
 
 /// An external program a converter depends on.
 #[derive(Debug, Clone, Copy)]
@@ -30,15 +46,98 @@ pub struct Tool {
     /// Environment variable that may point at the executable.
     pub env_override: &'static str,
     /// Folders to search after `PATH`, as `(environment variable, sub-path)`
-    /// pairs, e.g. `("LOCALAPPDATA", "Pandoc")`.
+    /// pairs, e.g. `("LOCALAPPDATA", "Pandoc")` or `("HOME", ".cargo/bin")`.
     pub known_dirs: &'static [(&'static str, &'static str)],
+    /// Absolute folders to search after [`known_dirs`](Self::known_dirs),
+    /// e.g. `/opt/homebrew/bin`.
+    pub system_dirs: &'static [&'static str],
     /// Windows `App Paths` registry entry written by the installer (e.g.
     /// `soffice.exe`), checked last. Finds programs installed to custom folders.
     pub app_path: Option<&'static str>,
     /// Official download page, shown when the tool is missing.
     pub homepage: &'static str,
-    /// One-line install command, if any (e.g. `winget install …`).
-    pub install_command: Option<&'static str>,
+    /// How to install the tool on each operating system.
+    pub install: InstallCommands,
+}
+
+/// One-line install commands for a program, per operating system.
+///
+/// Linux has one entry per package manager because distributions differ;
+/// the one present on the machine is picked at run time. `None` means there
+/// is no reliable command, and the UI offers the download page instead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InstallCommands {
+    /// `winget` (built into Windows 10/11).
+    pub windows: Option<&'static str>,
+    /// [Homebrew](https://brew.sh).
+    pub macos: Option<&'static str>,
+    /// Debian, Ubuntu, Linux Mint…
+    pub apt: Option<&'static str>,
+    /// Fedora, RHEL…
+    pub dnf: Option<&'static str>,
+    /// Arch, Manjaro…
+    pub pacman: Option<&'static str>,
+    /// openSUSE.
+    pub zypper: Option<&'static str>,
+}
+
+impl InstallCommands {
+    /// No command on any system.
+    pub const NONE: Self = Self {
+        windows: None,
+        macos: None,
+        apt: None,
+        dnf: None,
+        pacman: None,
+        zypper: None,
+    };
+
+    /// The command for the operating system (and, on Linux, the package
+    /// manager) this program runs on.
+    pub fn for_this_os(&self) -> Option<&'static str> {
+        if cfg!(windows) {
+            self.windows
+        } else if MACOS {
+            self.macos
+        } else {
+            match linux_package_manager()? {
+                PackageManager::Apt => self.apt,
+                PackageManager::Dnf => self.dnf,
+                PackageManager::Pacman => self.pacman,
+                PackageManager::Zypper => self.zypper,
+            }
+        }
+    }
+}
+
+/// Linux package managers [`InstallCommands`] knows about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PackageManager {
+    Apt,
+    Dnf,
+    Pacman,
+    Zypper,
+}
+
+/// The package manager installed on this machine, detected once by looking
+/// for its executable.
+fn linux_package_manager() -> Option<PackageManager> {
+    static DETECTED: OnceLock<Option<PackageManager>> = OnceLock::new();
+    *DETECTED.get_or_init(|| {
+        [
+            ("apt-get", PackageManager::Apt),
+            ("dnf", PackageManager::Dnf),
+            ("pacman", PackageManager::Pacman),
+            ("zypper", PackageManager::Zypper),
+        ]
+        .into_iter()
+        .find(|(program, _)| {
+            ["/usr/bin", "/bin", "/usr/sbin"]
+                .iter()
+                .any(|dir| Path::new(dir).join(program).is_file())
+        })
+        .map(|(_, manager)| manager)
+    })
 }
 
 /// [Pandoc](https://pandoc.org): universal document converter.
@@ -46,10 +145,28 @@ pub const PANDOC: Tool = Tool {
     name: "Pandoc",
     program: "pandoc",
     env_override: "CONVERTAPP_PANDOC",
-    known_dirs: &[("LOCALAPPDATA", "Pandoc"), ("ProgramFiles", "Pandoc")],
+    known_dirs: if cfg!(windows) {
+        &[("LOCALAPPDATA", "Pandoc"), ("ProgramFiles", "Pandoc")]
+    } else {
+        &[("HOME", ".local/bin")]
+    },
+    system_dirs: if cfg!(windows) {
+        &[]
+    } else if MACOS {
+        MACOS_BIN_DIRS
+    } else {
+        LINUX_BIN_DIRS
+    },
     app_path: None,
     homepage: "https://pandoc.org/installing.html",
-    install_command: Some("winget install JohnMacFarlane.Pandoc"),
+    install: InstallCommands {
+        windows: Some("winget install JohnMacFarlane.Pandoc"),
+        macos: Some("brew install pandoc"),
+        apt: Some("sudo apt install pandoc"),
+        dnf: Some("sudo dnf install pandoc"),
+        pacman: Some("sudo pacman -S pandoc"),
+        zypper: Some("sudo zypper install pandoc"),
+    },
 };
 
 /// [LibreOffice](https://www.libreoffice.org): office suite used headless
@@ -58,13 +175,45 @@ pub const LIBREOFFICE: Tool = Tool {
     name: "LibreOffice",
     program: "soffice",
     env_override: "CONVERTAPP_SOFFICE",
-    known_dirs: &[
-        ("ProgramFiles", r"LibreOffice\program"),
-        ("ProgramFiles(x86)", r"LibreOffice\program"),
-    ],
+    known_dirs: if cfg!(windows) {
+        &[
+            ("ProgramFiles", r"LibreOffice\program"),
+            ("ProgramFiles(x86)", r"LibreOffice\program"),
+        ]
+    } else if MACOS {
+        // Dragged into ~/Applications instead of /Applications.
+        &[("HOME", "Applications/LibreOffice.app/Contents/MacOS")]
+    } else {
+        &[]
+    },
+    system_dirs: if cfg!(windows) {
+        &[]
+    } else if MACOS {
+        // The .dmg and `brew install --cask` both install the app bundle,
+        // which never puts `soffice` on the PATH.
+        &[
+            "/Applications/LibreOffice.app/Contents/MacOS",
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+        ]
+    } else {
+        &[
+            "/usr/bin",
+            "/usr/local/bin",
+            "/usr/lib/libreoffice/program",
+            "/opt/libreoffice/program",
+        ]
+    },
     app_path: Some("soffice.exe"),
     homepage: "https://www.libreoffice.org/download/download-libreoffice/",
-    install_command: Some("winget install TheDocumentFoundation.LibreOffice"),
+    install: InstallCommands {
+        windows: Some("winget install TheDocumentFoundation.LibreOffice"),
+        macos: Some("brew install --cask libreoffice"),
+        apt: Some("sudo apt install libreoffice"),
+        dnf: Some("sudo dnf install libreoffice"),
+        pacman: Some("sudo pacman -S libreoffice-fresh"),
+        zypper: Some("sudo zypper install libreoffice"),
+    },
 };
 
 /// [Typst](https://typst.app): typesetting engine Pandoc uses to make PDFs.
@@ -72,10 +221,30 @@ pub const TYPST: Tool = Tool {
     name: "Typst",
     program: "typst",
     env_override: "CONVERTAPP_TYPST",
-    known_dirs: &[("LOCALAPPDATA", r"Microsoft\WinGet\Links")],
+    known_dirs: if cfg!(windows) {
+        &[("LOCALAPPDATA", r"Microsoft\WinGet\Links")]
+    } else {
+        // `cargo install typst-cli`, or the release archive unpacked by hand.
+        &[("HOME", ".cargo/bin"), ("HOME", ".local/bin")]
+    },
+    system_dirs: if cfg!(windows) {
+        &[]
+    } else if MACOS {
+        MACOS_BIN_DIRS
+    } else {
+        LINUX_BIN_DIRS
+    },
     app_path: None,
     homepage: "https://github.com/typst/typst/releases/latest",
-    install_command: Some("winget install Typst.Typst"),
+    install: InstallCommands {
+        windows: Some("winget install Typst.Typst"),
+        macos: Some("brew install typst"),
+        // Not packaged by Debian/Ubuntu stable: the download page is shown.
+        apt: None,
+        dnf: Some("sudo dnf install typst"),
+        pacman: Some("sudo pacman -S typst"),
+        zypper: Some("sudo zypper install typst"),
+    },
 };
 
 impl Tool {
@@ -94,21 +263,24 @@ impl Tool {
         let known_dirs = self.known_dirs.iter().filter_map(|(var, sub)| {
             std::env::var_os(var).map(|base| PathBuf::from(base).join(sub))
         });
+        let system_dirs = self.system_dirs.iter().map(PathBuf::from);
 
         path_dirs
             .into_iter()
             .chain(known_dirs)
+            .chain(system_dirs)
             .map(|dir| dir.join(&file_name))
             .find(|candidate| candidate.is_file())
             .or_else(|| self.app_path.and_then(registered_app_path))
     }
 
-    /// What the user must install when this tool is missing.
+    /// What the user must install when this tool is missing, with the
+    /// install command for this operating system.
     pub fn requirement(&self) -> Requirement {
         Requirement {
             name: self.name,
             url: self.homepage,
-            install_command: self.install_command,
+            install_command: self.install.for_this_os(),
             free: true,
         }
     }
@@ -131,7 +303,7 @@ impl Tool {
     }
 
     fn missing_reason(&self) -> String {
-        match self.install_command {
+        match self.install.for_this_os() {
             Some(command) => format!("{} is not installed. Install it with: {command}", self.name),
             None => format!(
                 "{} is not installed. Download it from {}",
@@ -293,9 +465,17 @@ mod tests {
         program: "definitely-not-installed-convertapp",
         env_override: "CONVERTAPP_TEST_NOPE",
         known_dirs: &[],
+        system_dirs: &[],
         app_path: None,
         homepage: "https://example.com/nope",
-        install_command: Some("install nope"),
+        install: InstallCommands {
+            windows: Some("install nope"),
+            macos: Some("install nope"),
+            apt: Some("install nope"),
+            dnf: Some("install nope"),
+            pacman: Some("install nope"),
+            zypper: Some("install nope"),
+        },
     };
 
     #[test]
@@ -305,7 +485,10 @@ mod tests {
             Availability::Unavailable { reason, missing } => {
                 assert_eq!(missing, [MISSING.requirement()]);
                 assert!(reason.contains("Nope is not installed"));
-                assert!(reason.contains("install nope"));
+                // A Linux machine without a known package manager gets the
+                // download page instead of a command.
+                let hint = MISSING.install.for_this_os().unwrap_or(MISSING.homepage);
+                assert!(reason.contains(hint));
             }
             Availability::Available => panic!("should be missing"),
         }
@@ -313,6 +496,41 @@ mod tests {
             MISSING.require(),
             Err(ConvertError::External { tool: "Nope", .. })
         ));
+    }
+
+    #[test]
+    fn install_commands_match_this_os() {
+        for tool in [PANDOC, LIBREOFFICE, TYPST] {
+            let command = tool.install.for_this_os();
+            if cfg!(windows) {
+                assert!(
+                    command.is_some_and(|c| c.starts_with("winget ")),
+                    "{command:?}"
+                );
+            } else if MACOS {
+                assert!(
+                    command.is_some_and(|c| c.starts_with("brew ")),
+                    "{command:?}"
+                );
+            } else if let Some(command) = command {
+                assert!(command.starts_with("sudo "), "{command}");
+                assert!(!command.contains("winget") && !command.contains("brew"));
+            }
+        }
+    }
+
+    #[test]
+    fn search_folders_belong_to_this_os() {
+        for tool in [PANDOC, LIBREOFFICE, TYPST] {
+            for (var, sub) in tool.known_dirs {
+                assert_eq!(*var == "HOME", !cfg!(windows), "{var}");
+                if !cfg!(windows) {
+                    assert!(!sub.contains('\\'), "{sub}");
+                }
+            }
+            assert!(tool.system_dirs.iter().all(|dir| dir.starts_with('/')));
+            assert_eq!(tool.system_dirs.is_empty(), cfg!(windows));
+        }
     }
 
     #[cfg(windows)]
