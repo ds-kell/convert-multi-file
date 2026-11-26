@@ -83,47 +83,50 @@ export default function App() {
         </div>
       </header>
 
-      {!insideTauri && (
-        <p className="banner">{t("app.browserOnly", { command: "cargo tauri dev" })}</p>
-      )}
+      {/* Only this middle part scrolls; header and footer stay put. */}
+      <div className="app__body">
+        {!insideTauri && (
+          <p className="banner">{t("app.browserOnly", { command: "cargo tauri dev" })}</p>
+        )}
 
-      <DropZone hovering={hovering} compact={files.length > 0} disabled={busy} onPick={handlePickFiles} />
+        <DropZone hovering={hovering} compact={files.length > 0} disabled={busy} onPick={handlePickFiles} />
 
-      {files.length > 0 && (
-        <>
-          <FileList files={files} busy={busy} onRemove={(p) => void converter.removeFile(p)} onReveal={(p) => void revealInFolder(p)} />
+        {files.length > 0 && (
+          <>
+            <FileList files={files} busy={busy} onRemove={(p) => void converter.removeFile(p)} onReveal={(p) => void revealInFolder(p)} />
 
-          <section className="panel">
-            <h2 className="panel__title">{t("app.convertTo")}</h2>
-            <TargetPicker
-              targets={offered}
-              locked={converter.locked}
-              selected={target}
-              disabled={busy}
-              onSelect={setTarget}
-              onRecheck={() => void converter.refresh()}
-            />
-            {offered.length > 0 && (
-              <SettingsPanel
-                target={offered.find((t) => t.id === target) ?? null}
-                fileCount={convertible}
-                imagesOnly={imagesOnly}
-                webPagesOnly={webPagesOnly}
-                officeOnly={officeOnly}
-                mergeAvailable={mergeAvailable}
-                mergeForced={mergeForced}
-                settings={settings}
+            <section className="panel">
+              <h2 className="panel__title">{t("app.convertTo")}</h2>
+              <TargetPicker
+                targets={offered}
+                locked={converter.locked}
+                selected={target}
                 disabled={busy}
-                onChange={setSettings}
-                onPickFolder={handlePickFolder}
-                onPickWordTemplate={handlePickWordTemplate}
+                onSelect={setTarget}
+                onRecheck={() => void converter.refresh()}
               />
-            )}
-          </section>
-        </>
-      )}
+              {offered.length > 0 && (
+                <SettingsPanel
+                  target={offered.find((t) => t.id === target) ?? null}
+                  fileCount={convertible}
+                  imagesOnly={imagesOnly}
+                  webPagesOnly={webPagesOnly}
+                  officeOnly={officeOnly}
+                  mergeAvailable={mergeAvailable}
+                  mergeForced={mergeForced}
+                  settings={settings}
+                  disabled={busy}
+                  onChange={setSettings}
+                  onPickFolder={handlePickFolder}
+                  onPickWordTemplate={handlePickWordTemplate}
+                />
+              )}
+            </section>
+          </>
+        )}
 
-      {error !== null && <p className="banner banner--error">{error}</p>}
+        {error !== null && <p className="banner banner--error">{error}</p>}
+      </div>
 
       {files.length > 0 && (
         <footer className="app__footer">
