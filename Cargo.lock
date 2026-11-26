@@ -745,7 +745,7 @@ checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 
 [[package]]
 name = "convertapp"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "convertapp-core",
@@ -762,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "convertapp-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "convertapp-core",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "convertapp-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "base64 0.23.1",
  "comrak",
@@ -798,7 +798,7 @@ dependencies = [
 
 [[package]]
 name = "convertapp-shell"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "convertapp-core",
  "thiserror 2.0.21",
