@@ -52,5 +52,7 @@ jobs:
           releaseDraft: false
           releaseBody: |
             **Windows:** run `ConvertApp_*_x64-setup.exe`. SmartScreen may warn because the app is not code-signed: click *More info → Run anyway*.
-            **macOS:** open the `.dmg` (`aarch64` = Apple Silicon, `x64` = Intel). The app is not notarized: right-click → *Open*, or run `xattr -cr /Applications/ConvertApp.app`.
+            **macOS:** open the `.dmg` (`aarch64` = Apple Silicon, `x64` = Intel) and drag ConvertApp to Applications. The app is not notarized, so the first launch says *Apple could not verify "ConvertApp"…*: click **Done**, then *System Settings → Privacy & Security → Open Anyway*. Or run `xattr -cr /Applications/ConvertApp.app`.
             **Linux:** `.deb` for Debian/Ubuntu, `.AppImage` for everything else (`chmod +x` then run).
+
+            Step-by-step guide (English / Tiếng Việt): https://github.com/ds-kell/convert-multi-file/blob/main/docs/INSTALL.md

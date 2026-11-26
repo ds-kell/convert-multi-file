@@ -10,7 +10,7 @@ Convert images (PNG, JPG, WebP, GIF, BMP, TIFF, ICO, SVG), PDF, Markdown, HTML, 
 | macOS (Apple Silicon / Intel) | `ConvertApp_<version>_aarch64.dmg` / `ConvertApp_<version>_x64.dmg` |
 | Linux | `.deb` (Debian/Ubuntu) or `.AppImage` (any distro) |
 
-Unsigned builds: on Windows click *More info → Run anyway*; on macOS right-click the app → *Open* (or `xattr -cr /Applications/ConvertApp.app`). Word/PDF conversions need free tools (Pandoc, LibreOffice); the app tells you exactly what to install.
+**First launch shows a security warning** because the app isn't signed with a paid certificate. Step-by-step fix for each OS: **[Installation guide / Hướng dẫn cài đặt](docs/INSTALL.md)**. In short: on Windows click *More info → Run anyway*; on macOS go to *System Settings → Privacy & Security → Open Anyway* (or run `xattr -cr /Applications/ConvertApp.app`). Word/PDF conversions need free tools (Pandoc, LibreOffice); the app tells you exactly what to install.
 
 ---
 
